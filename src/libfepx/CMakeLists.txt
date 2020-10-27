@@ -45,7 +45,7 @@ file(GLOB libfepx_src
     stress_deform_lag.f90
     stress_solve_evps_mod.f90
     stress_solve_vp_lag.f90
-    surface.f90
+    surface_mod.f90
     surface_info_mod.f90
     tensor_3d_mod.f90
     units.f90
