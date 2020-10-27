@@ -14,7 +14,7 @@ MODULE PolycrystalResponseEvpsModule
   USE rstarn_solve_lag_mod
   USE StressSolveVpModule
   USE STRESS_SOLVE_EVPS_MOD, ONLY: STRESS_SOLVE_EVPS
-  USE ConvergenceModule, ONLY: cv_options
+  USE CONVERGENCE_MOD, ONLY: cv_options
 
   IMPLICIT NONE
 

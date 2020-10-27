@@ -44,7 +44,7 @@ MODULE StressSolveVpModule
   USE units_mod
   USE DimsModule
   USE microstructure_mod
-  USE ConvergenceModule, ONLY: cv_options
+  USE CONVERGENCE_MOD, ONLY: cv_options
   USE MATRIX_OPERATIONS_MOD
 
   IMPLICIT  NONE

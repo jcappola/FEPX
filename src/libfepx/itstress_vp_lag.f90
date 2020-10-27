@@ -13,7 +13,7 @@ MODULE ItMethodVpModule
   USE microstructure_mod
   USE SURFACE_INFO_MOD
   USE DimsModule
-  USE ConvergenceModule, ONLY: cv_options
+  USE CONVERGENCE_MOD, ONLY: cv_options
   USE StiffnessVpModule
 
   IMPLICIT NONE

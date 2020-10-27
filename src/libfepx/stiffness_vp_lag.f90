@@ -11,7 +11,7 @@ MODULE StiffnessVpModule
   USE READ_INPUT_MOD
   USE shape_3d_mod
   USE DimsModule
-  USE ConvergenceModule, ONLY: cv_options
+  USE CONVERGENCE_MOD, ONLY: cv_options
   USE MaterialMatrixVpModule
 
   IMPLICIT NONE

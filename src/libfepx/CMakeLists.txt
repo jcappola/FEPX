@@ -10,7 +10,7 @@ file(GLOB libfepx_src
     aniso_evps_mod.f90
     aniso_vp_lag.f90
     boundary_conditions_mod.f90
-    ConvergenceModule.f90
+    convergence_mod.f90
     CrystalTypeModule.f90
     DimsModule.f90
     Dpeff.f90
