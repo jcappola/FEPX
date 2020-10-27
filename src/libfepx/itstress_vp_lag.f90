@@ -11,7 +11,7 @@ MODULE ItMethodVpModule
   USE units_mod
   USE READ_INPUT_MOD
   USE microstructure_mod
-  USE surf_info_mod
+  USE SURFACE_INFO_MOD
   USE DimsModule
   USE ConvergenceModule, ONLY: cv_options
   USE StiffnessVpModule

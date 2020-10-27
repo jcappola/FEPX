@@ -118,7 +118,7 @@ USE PARALLEL_MOD
 USE DIMSMODULE
 USE CONVERGENCEMODULE, ONLY: CONVERGENCEKEYWORDINPUT
 USE SURFACE_MOD
-USE SURF_INFO_MOD
+USE SURFACE_INFO_MOD
 !
 IMPLICIT NONE
 !
@@ -1324,7 +1324,8 @@ CONTAINS
     ! Read in the number of fasets in the section (and set FASETS).
     READ(IO, *) FASETS
     !
-    ! This needs to be set here, but is in the scope of SURF_INFO_MOD currently.
+    ! This needs to be set here, but is in the scope of SURFACE_INFO_MOD
+    !   currently.
     NSURFACES = FASETS 
     !
     ! Check if 6 surfaces are to be read in. This is hardwired for cubic geom.
