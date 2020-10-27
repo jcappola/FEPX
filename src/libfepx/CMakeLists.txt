@@ -39,7 +39,7 @@ file(GLOB libfepx_src
     quadrature.f90
     rstarn_solve_lag.f90
     shape_2d.f90
-    shape_3d.f90
+    shape_3d_mod.f90
     StiffnessEvpsModule.f90
     stiffness_vp_lag.f90
     stress_deform_lag.f90
