@@ -2,258 +2,224 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE CrystalTypeModule 
+MODULE CRYSTAL_TYPE_MOD
 !
-!  *** Program Unit:  Module
-!  ***    Unit Name:  CrystalTypeModule
-!  ***  Description:
+! This module handles the basic CrystalType object.
 !
-!  This module handles the basic CrystalType object.
+! To do:
+!   - Add VERTICES to object structure
+!   - Add P*P^T to "get list"
 !
-!  TODO:  
+! Contains subroutines:
+! SCHMIDTENSORS: Create Schmid tensors for specified crystal type
+! CRYSTALTYPEDESCRIBE: Print information about crystal type
+! CRYSTALTYPEGET: Return deviatoric parts of Schmid tensors
 !
-!  *  Add vertices to object structure
-!  *  Add P*P^T to "get list"
+! Contains functions:
+! CRYSTALTYPECREATE: Create a crystal type object
 !
-!  *** Use Statements:
-!
-USE IntrinsicTypesModule, &
-     &  RK=>REAL_KIND, IK=>INTEGER_KIND, LK=>LOGICAL_KIND
-USE ConstantsModule
-USE FilesModule
-USE tensor_3d_mod
-!
-!  *** End:
+USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND, IK=>INTEGER_KIND, &
+    & LK=>LOGICAL_KIND
+USE CONSTANTSMODULE
+USE FILESMODULE
+USE TENSOR_3D_MOD
 !
 IMPLICIT NONE
 !
 PRIVATE
 !
-!  Crystal class indicators.
-!
-INTEGER, PARAMETER :: CLASS_FCC=1, CLASS_BCC=2, CLASS_HCP=3
+INTEGER, PARAMETER :: CLASS_FCC = 1
+INTEGER, PARAMETER :: CLASS_BCC = 2
+INTEGER, PARAMETER :: CLASS_HCP = 3
 INTEGER :: DECOMP_DFLT = DECOMP_MPSIM
 !
-!  *** Derived Types:
+TYPE CRYSTALTYPETYPE
+    !
+    !PRIVATE  ! allowing access to components
+    !
+    !CHARACTER, POINTER :: name(:)
+    !
+    INTEGER :: CLASS   ! FCC, BCC, HCP
+    INTEGER :: DECOMP  ! DECOMPosition convention
+    INTEGER :: NUMSLIP
+    INTEGER :: NUMVERTICES
+    !
+    REAL(RK), POINTER :: SCHMID_3X3(:, :, :)
+    REAL(RK), POINTER :: DEV(:, :)
+    REAL(RK), POINTER :: SKW(:, :)
+    REAL(RK), POINTER :: PPTRANS(:, :, :)
+    REAL(RK), POINTER :: VERTICES(:, :)
+    REAL(RK), POINTER :: VERTICES3X3(:, :, :)
+    !
+END TYPE CRYSTALTYPETYPE
 !
-TYPE CrystalTypeType
-   !
-   !PRIVATE  ! allowing access to components
-   !
-   !CHARACTER, POINTER :: name(:)
-   !
-   INTEGER  :: class   ! FCC, BCC, HCP
-   INTEGER  :: decomp  ! Decomposition convention
-   INTEGER  :: numslip, numvertices
-   !
-   REAL(RK), POINTER :: schmid_3x3(:, :, :), dev(:, :), skw(:, :), pptrans(:, :, :)
-   REAL(RK), POINTER :: vertices(:, :), vertices3x3(:, :, :)
-   !
-END TYPE CrystalTypeType
+! Public
 !
-!--------------Public Entities
+PUBLIC :: CRYSTALTYPETYPE
+PUBLIC :: CLASS_FCC
+PUBLIC :: CLASS_BCC
+PUBLIC :: CLASS_HCP
+PUBLIC :: DECOMP_MPSIM
+PUBLIC :: DECOMP_FEMEVPS
 !
-!
-!  *** Public Types:
-!
-PUBLIC :: CrystalTypeType 
-!
-!  *** Public Data:
-!
-!  Below are flags indicating crystal type and decomposition convention.
-!
-PUBLIC :: CLASS_FCC, CLASS_BCC, CLASS_HCP
-PUBLIC :: DECOMP_MPSIM, DECOMP_FEMEVPS
-!
-!  *** Public Procedures:
-!
-PUBLIC :: CrystalTypeCreate, CrystalTypeDescribe,&
-     &  CrystalTypeGet
-!
-!  *** End:
-!
-!--------------*-------------------------------------------------------
+PUBLIC :: CRYSTALTYPECREATE
+PUBLIC :: CRYSTALTYPEDESCRIBE
+PUBLIC :: CRYSTALTYPEGET
 !
 CONTAINS 
-!
-!  *** Program Unit:  function
-!  ***    Unit Name:  CrystalTypeCreate
-!
-!  *** Unit Declaration: 
-!
-FUNCTION CrystalTypeCreate(CTYPE, &
-     &   C_OVER_A, HRATIO_HCP, HRATIO_HCP_PRISM, DECOMP) &
-     &   RESULT(self)
-    ! Removed VERTEX_FILE from arguments - JC
-  !
-  !  ***  Description:  
-  !
-  !  Create a CrystalTypeType object.
-  !
-  !  *** Argument Declarations:
-  !
-  !  CTYPE -- crystal type
-  !
-  INTEGER, INTENT(IN) :: CTYPE
-  !
-  !  C_OVER_A -- C over A ratio
-  !
-  REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
-  !
-  !  HRATIO_HCP -- Ratio of pyramidal strengths to basal/prismatic
-  !
-  REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP, HRATIO_HCP_PRISM
-  !
-  !  VERTEX_FILE -- file containing list of vertices
-  !
-  !CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: VERTEX_FILE
-  !
-  !  DECOMP -- decomposition convention indicator
-  !
-  INTEGER, INTENT(IN), OPTIONAL :: DECOMP 
-  !
-  !  *** Result:
-  !  
-  TYPE(CrystalTypeType), POINTER :: self
-  !
-  !  *** Locals:
-  !
-  INTEGER(IK) :: mystat, i, unit, numvert
-  !
-  REAL(RK), PARAMETER :: DFLT_HRATIO_HCP=RK_ONE, DFLT_HRATIO_HCP_PRISM=RK_ONE,&
-                      &  DFLT_CRATIO=RK_ONE
-  !
-  REAL(RK) :: hrhcp_pyr, hrhcp_prism, cratio
-  !
-  !  *** End:
-  !
-  !--------------*-------------------------------------------------------
-  !
-  ALLOCATE(self, STAT=mystat)
-  NULLIFY(self%schmid_3x3, self%dev, self%skw, self%pptrans, &
-       &  self%vertices, self%vertices3x3)
-  !
-  self%class = CTYPE
-  
-  
-  !write(*,*)' crystal_type_create'
-
-  !
-  !  Expression is a scalar of type integer, character, or logical.
-  !
-  SELECT CASE(CTYPE)
-     !
-  CASE (CLASS_FCC, CLASS_BCC)
-     !
-  
-      !write(*,*)' before schmid tensor'
-
-     call SchmidTensors(CTYPE, self%schmid_3x3)
-     !
-  CASE (CLASS_HCP)
-     !
-     ! Hexagonal case
-     !
-     IF (PRESENT(C_OVER_A) ) THEN
-         cratio = C_OVER_A
-     ELSE
-         cratio = DFLT_CRATIO
-     END IF
-     !
-     IF (PRESENT(HRATIO_HCP) ) THEN
-         hrhcp_pyr = HRATIO_HCP
-     ELSE
-         hrhcp_pyr = DFLT_HRATIO_HCP
-     END IF
-     !
-     IF (PRESENT(HRATIO_HCP_PRISM) ) THEN
-         hrhcp_prism = HRATIO_HCP_PRISM
-     ELSE
-         hrhcp_prism = DFLT_HRATIO_HCP_PRISM
-     END IF
-     !
-     call SchmidTensors(CTYPE, self%schmid_3x3,&
-          &  C_OVER_A=cratio, HRATIO_HCP=hrhcp_pyr, HRATIO_HCP_PRISM=hrhcp_prism)
-     !
-  CASE DEFAULT
-     !
-  END SELECT
-  !
-  self%numslip = SIZE(self%schmid_3x3, DIM=3)
-  !
-  if (PRESENT(DECOMP)) then
-     self%decomp = DECOMP
-  else
-     self%decomp = DECOMP_DFLT
-  end if
-  !
-  
- !write(*,*)' before crystal type get'
-
-  call CrystalTypeGet(self, &
-       &   DEV=self%dev, SKW=self%skw, PPTRANS=self%pptrans)
-  !
-  !if (PRESENT(VERTEX_FILE)) then
-
-     !write(*,*)' before reading vertex file'
-
-!     unit = GetUnitNumber(VERTEX_FILE)
-!     read(unit, *) numvert
-!     ALLOCATE(self%vertices3x3(3, 3, numvert))
-!     read(unit, *) self%vertices3x3
-!     close(unit)
-     !
-!     self%numvertices = numvert
-     !
-!     ALLOCATE(self%vertices(5, self%numvertices))
-
-    !write(*,*)' before tensor 3d decomp.'
-
-    ! Retrieve the single-crystal yield surface vertices for crystal type.
+    !
+    FUNCTION CRYSTALTYPECREATE(CTYPE, C_OVER_A, HRATIO_HCP, HRATIO_HCP_PRISM, &
+        & DECOMP) RESULT(SELF)
+    !
+    ! Create a crystal type object
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! CTYPE: Crystal type
+    ! C_OVER_A: Hexagonal c/a ratio
+    ! HRATIO_HCP: Ratio of pyramidal strengths to basal/prismatic
+    ! DECOMP: Decomposition convention indicator
+    ! SELF: (Result)
+    !
+    INTEGER, INTENT(IN) :: CTYPE
+    REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PRISM
+    INTEGER, INTENT(IN), OPTIONAL :: DECOMP
+    TYPE(CRYSTALTYPETYPE), POINTER :: SELF
+    !
+    ! Locals:
+    !
+    INTEGER(IK) :: MYSTAT
+    INTEGER(IK) :: i
+    INTEGER(IK) :: UNIT
+    INTEGER(IK) :: NUMVERT
+    !
+    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP = RK_ONE
+    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PRISM = RK_ONE
+    REAL(RK), PARAMETER :: DFLT_CRATIO = RK_ONE
+    !
+    REAL(RK) :: HRHCP_PYR
+    REAL(RK) :: HRHCP_PRISM
+    REAL(RK) :: CRATIO
+    !
+    !---------------------------------------------------------------------------
+    !
+    ALLOCATE(SELF, STAT = MYSTAT)
+    !
+    NULLIFY(SELF%SCHMID_3X3, SELF%DEV, SELF%SKW, SELF%PPTRANS, SELF%VERTICES, &
+        & SELF%VERTICES3X3)
+    !
+    SELF%CLASS = CTYPE
+    !
+    ! Expression is a scalar of type integer, character, or logical.
+    !
+    SELECT CASE(CTYPE)
+    !
+    CASE (CLASS_FCC, CLASS_BCC)
+        !
+        CALL SCHMIDTENSORS(CTYPE, SELF%SCHMID_3X3)
+        !
+    CASE (CLASS_HCP)
+        !
+        IF (PRESENT(C_OVER_A) ) THEN
+            !
+            CRATIO = C_OVER_A
+            !
+        ELSE
+            !
+            CRATIO = DFLT_CRATIO
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_HCP) ) THEN
+            !
+            HRHCP_PYR = HRATIO_HCP
+            !
+        ELSE
+            !
+            HRHCP_PYR = DFLT_HRATIO_HCP
+            !
+        END IF
+        !
+        IF (PRESENT(HRATIO_HCP_PRISM) ) THEN
+            !
+            HRHCP_PRISM = HRATIO_HCP_PRISM
+            !
+        ELSE
+            !
+            HRHCP_PRISM = DFLT_HRATIO_HCP_PRISM
+            !
+        END IF
+        !
+        CALL SCHMIDTENSORS(CTYPE, SELF%SCHMID_3X3, C_OVER_A = CRATIO, &
+            & HRATIO_HCP = HRHCP_PYR, HRATIO_HCP_PRISM = HRHCP_PRISM)
+        !
+    CASE DEFAULT
+    !
+    END SELECT
+    !
+    SELF%NUMSLIP = SIZE(SELF%SCHMID_3X3, DIM=3)
+    !
+    IF (PRESENT(DECOMP)) THEN
+        !
+        SELF%DECOMP = DECOMP
+        !
+    ELSE
+        !
+        SELF%DECOMP = DECOMP_DFLT
+        !
+    END IF
+    !
+    CALL CRYSTALTYPEGET(SELF, DEV = SELF%DEV, SKW = SELF%SKW, &
+        & PPTRANS = SELF%PPTRANS)
+    !
+    ! Retrieve the single-crystal yield surface VERTICES for crystal type.
     ! Note: FCC/BCC should be the same. These values are presently hard-coded
-    ! from the values in the legacy vertices files from DPLab. - JC
+    ! from the values in the legacy VERTICES files from DPLab. - JC
     ! 
     IF (CTYPE .EQ. 1) THEN ! CLASS_FCC
         !
-        ! Initialize self values for FCC.
+        ! Initialize SELF values for FCC.
         SELF%NUMVERTICES = 28
         ALLOCATE(SELF%VERTICES3X3(3, 3, SELF%NUMVERTICES))
         !
-        ! Return the vertices 3x3s from data storage subroutine.
-        CALL GET_VERTICES(1, SELF%VERTICES3x3)
+        ! Return the VERTICES 3X3s from data storage subroutine.
+        CALL GET_VERTICES(1, SELF%VERTICES3X3)
         !
-        ! Allocate array for tensor decomposition.
+        ! Allocate array for tensor DECOMPosition.
         ALLOCATE(SELF%VERTICES(5, SELF%NUMVERTICES))
-        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV=SELF%VERTICES, &
-            & DECOMP=SELF%DECOMP)
+        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV = SELF%VERTICES, &
+            & DECOMP = SELF%DECOMP)
         !
     ELSE IF (CTYPE .EQ. 2) THEN ! CLASS_BCC
         !
-        ! Initialize self values for BCC.
+        ! Initialize SELF values for BCC.
         SELF%NUMVERTICES = 28
         ALLOCATE(SELF%VERTICES3X3(3, 3, SELF%NUMVERTICES))
         !
-        ! Return the vertices 3x3s from data storage subroutine.
-        CALL GET_VERTICES(2, SELF%VERTICES3x3)
+        ! Return the VERTICES 3X3s from data storage subroutine.
+        CALL GET_VERTICES(2, SELF%VERTICES3X3)
         !
-        ! Allocate array for tensor decomposition.
+        ! Allocate array for tensor DECOMPosition.
         ALLOCATE(SELF%VERTICES(5, SELF%NUMVERTICES))
-        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV=SELF%VERTICES, &
-            & DECOMP=SELF%DECOMP)
+        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV = SELF%VERTICES, &
+            & DECOMP = SELF%DECOMP)
         !
     ELSE IF (CTYPE .EQ. 3) THEN ! CLASS_HCP
         !
-        ! Initialize self values for HCP.
+        ! Initialize SELF values for HCP.
         SELF%NUMVERTICES = 240
         ALLOCATE(SELF%VERTICES3X3(3, 3, SELF%NUMVERTICES))
         !
-        ! Return the vertices 3x3s from data storage subroutine.
-        CALL GET_VERTICES(3, SELF%VERTICES3x3)
+        ! Return the VERTICES 3X3s from data storage subroutine.
+        CALL GET_VERTICES(3, SELF%VERTICES3X3)
         !
-        ! Allocate array for tensor decomposition.
+        ! Allocate array for tensor DECOMPosition.
         ALLOCATE(SELF%VERTICES(5, SELF%NUMVERTICES))
-        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV=SELF%VERTICES, &
-            & DECOMP=SELF%DECOMP)
+        CALL TENSOR3DDECOMPOSE(SELF%VERTICES3X3, DEV = SELF%VERTICES, &
+            & DECOMP = SELF%DECOMP)
         !
     ELSE
         !
@@ -261,497 +227,491 @@ FUNCTION CrystalTypeCreate(CTYPE, &
         !  
     END IF
     !
-END FUNCTION CrystalTypeCreate
-!
-!  *** Program Unit:  subroutine
-!  ***    Unit Name:  SchmidTensors
-!
-!  *** Unit Declaration: 
-!
-SUBROUTINE SchmidTensors(CTYPE, SCHMID, &
-     &   C_OVER_A, HRATIO_HCP, HRATIO_HCP_PRISM)
-  !
-  !  ***  Description:  
-  !
-  !  *** Arguments:
-  !
-  !  CTYPE -- crystal type
-  !
-  INTEGER, INTENT(IN) :: CTYPE
-  !
-  !  SCHMID -- Schmid tensors
-  !
-  REAL(RK), POINTER :: SCHMID(:, :, :)
-  !
-  !  C_OVER_A -- C over A ratio
-  !
-  REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
-  !
-  !  HRATIO_HCP -- Ratio of pyramidal strengths to basal/prismatic
-  !
-  REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP, HRATIO_HCP_PRISM
-  !
-  !  *** Locals:
-  !
-  !  Various factors making unit vectors.
-  !
-  REAL(RK), PARAMETER :: Z  =  RK_ZERO
-  REAL(RK), PARAMETER :: P2 =  RK_ONE/RK_ROOT_2, P3 = RK_ONE/RK_ROOT_3
-  REAL(RK), PARAMETER :: M2 = -P2, M3 = -P3
-  !
-  !  For BCC {211} plane normals.
-  !
-  REAL(RK), PARAMETER :: P6_1 = RK_ONE/RK_ROOT_6
-  REAL(RK), PARAMETER :: P6_2 = RK_TWO * P6_1
-  REAL(RK), PARAMETER :: M6_1 = -P6_1, M6_2 = -P6_2
-  !
-  !  For BCC {123} plane normals.
-  !
-  REAL(RK), PARAMETER :: P14_1 =   RK_ONE/RK_ROOT_14
-  REAL(RK), PARAMETER :: P14_2 =   RK_TWO/RK_ROOT_14
-  REAL(RK), PARAMETER :: P14_3 = RK_THREE/RK_ROOT_14
-  REAL(RK), PARAMETER :: M14_1=-P14_1, M14_2=-P14_2, M14_3=-P14_3
-  !     
-  !  SLIP NORMAL AND DIRECTIONS. 
-  ! 
-  REAL(RK), PARAMETER, DIMENSION(36) :: cub_111_dat = (/&
-       &   P3, P3, P3,     P3, P3, P3,    P3, P3, P3,&
-       &   P3, P3, M3,     P3, P3, M3,    P3, P3, M3,&
-       &   P3, M3, P3,     P3, M3, P3,    P3, M3, P3,&
-       &   P3, M3, M3,     P3, M3, M3,    P3, M3, M3 &
-       &  /)
-  REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       &   cub_111 = RESHAPE(SOURCE=cub_111_dat, SHAPE=(/3, 12/))
-  !     
-  REAL(RK), PARAMETER, DIMENSION(36) :: cub_110_dat = (/&
-       &  Z, P2, M2,    P2, Z, M2,    P2, M2, Z,&
-       &  Z, P2, P2,    P2, Z, P2,    P2, M2, Z,&
-       &  Z, P2, P2,    P2, Z, M2,    P2, P2, Z,&
-       &  Z, P2, M2,    P2, Z, P2,    P2, P2, Z &
-       &  /)
-  REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       &   cub_110 = RESHAPE(SOURCE=cub_110_dat, SHAPE=(/3, 12/))
-  !     
-  REAL(RK), PARAMETER, DIMENSION(36) :: cub_211_dat = (/&
-       &  M6_1, M6_1, P6_2,    M6_1, P6_2, M6_1,    P6_2, M6_1, M6_1,&
-       &  M6_1, M6_1, M6_2,    M6_1, P6_2, P6_1,    P6_2, M6_1, P6_1,&
-       &  M6_1, P6_1, P6_2,    M6_1, M6_2, M6_1,    P6_2, P6_1, M6_1,&
-       &  M6_1, P6_1, M6_2,    M6_1, M6_2, P6_1,    P6_2, P6_1, P6_1 &
-       &/)
-  REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       &   cub_211 = RESHAPE(SOURCE=cub_211_dat, SHAPE=(/3, 12/))
-  !     
-  REAL(RK), PARAMETER, DIMENSION(36) :: cub_123_a_dat = (/&
-       &  M14_1, M14_2, P14_3, M14_1, P14_3, M14_2,  P14_3, M14_1, M14_2,&
-       &  M14_1, M14_2, M14_3, M14_1, P14_3, P14_2,  P14_3, M14_1, P14_2,&
-       &  M14_1, P14_2, P14_3, M14_1, M14_3, M14_2,  P14_3, P14_1, M14_2,&
-       &  M14_1, P14_2, M14_3, M14_1, M14_3, P14_2,  P14_3, P14_1, P14_2 &
-       &  /)
-  REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       &   cub_123_a = RESHAPE(SOURCE=cub_123_a_dat, SHAPE=(/3, 12/))
-  !
-  REAL(RK), PARAMETER, DIMENSION(36) :: cub_123_b_dat = (/&
-       &   M14_2, M14_1, P14_3, M14_2, P14_3, M14_1,  P14_3, M14_2, M14_1,& 
-       &   M14_2, M14_1, M14_3, M14_2, P14_3, P14_1,  P14_3, M14_2, P14_1,& 
-       &   M14_2, P14_1, P14_3, M14_2, M14_3, M14_1,  P14_3, P14_2, M14_1,& 
-       &   M14_2, P14_1, M14_3, M14_2, M14_3, P14_1,  P14_3, P14_2, P14_1 &
-       &  /)
-  REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
-       &   cub_123_b = RESHAPE(SOURCE=cub_123_b_dat, SHAPE=(/3, 12/))
-  !
-  !  HCP slip data.
-  !
-  !  ... parameters
-  !
-  REAL(RK), PARAMETER :: ONE = 1.0_RK, HALF = 0.5_RK
-  REAL(RK), PARAMETER :: COS_30 = HALF*RK_ROOT_3
-  !
-  REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-       &   hex_basal_sn = RESHAPE(&
-       &      SOURCE=(/&
-       &         Z, Z, ONE,     Z, Z, ONE,     Z, Z, ONE &
-       &      /), &
-       &      SHAPE=(/3, 3/))
-  !
-  REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-       &   hex_basal_sd = RESHAPE(&
-       &      SOURCE=(/&
-       &         ONE, Z, Z,    -HALF, COS_30, Z,   -HALF,  -COS_30, Z &
-       &      /), &
-       &      SHAPE=(/3, 3/))
-  !
-  REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-       &   hex_pris_sn = RESHAPE(&
-       &      SOURCE=(/&
-       &         Z, ONE, Z,     -COS_30, -HALF,  Z,     COS_30, -HALF,  Z &
-       &      /), &
-       &      SHAPE=(/3, 3/))
-  !
-  REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
-       &   hex_pris_sd = RESHAPE(&
-       &      SOURCE=(/&
-       &         ONE, Z, Z,    -HALF, COS_30, Z,       -HALF, -COS_30, Z &
-       &      /), &
-       &      SHAPE=(/3, 3/))
-  !
-  REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
-       &   hex_pyr1_sn = RESHAPE(&
-       &      SOURCE=(/&
-       &          1.0,  0.0, -1.0,  1.0,&
-       &          1.0,  0.0, -1.0,  1.0,&
-       &          0.0,  1.0, -1.0,  1.0,&
-       &          0.0,  1.0, -1.0,  1.0,&
-       &         -1.0,  1.0,  0.0,  1.0,&
-       &         -1.0,  1.0,  0.0,  1.0,&
-       &         -1.0,  0.0,  1.0,  1.0,&
-       &         -1.0,  0.0,  1.0,  1.0,&
-       &          0.0, -1.0,  1.0,  1.0,&
-       &          0.0, -1.0,  1.0,  1.0,&
-       &          1.0, -1.0,  0.0,  1.0,&
-       &          1.0, -1.0,  0.0,  1.0 &
-       &      /), &
-       &      SHAPE=(/4,  12/))
-  !
-  !  NOTE:  does 3.0 need to be 3.0_RK ?
-  !
-  REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
-       &   hex_pyr1_sd = RESHAPE(&
-       &      SOURCE=(/&
-       &         -2.0,  1.0,  1.0,  3.0,&
-       &         -1.0, -1.0,  2.0,  3.0,&
-       &         -1.0, -1.0,  2.0,  3.0,&
-       &          1.0, -2.0,  1.0,  3.0,& 
-       &          1.0, -2.0,  1.0,  3.0,& 
-       &          2.0, -1.0, -1.0,  3.0,& 
-       &          2.0, -1.0, -1.0,  3.0,& 
-       &          1.0,  1.0, -2.0,  3.0,& 
-       &          1.0,  1.0, -2.0,  3.0,& 
-       &         -1.0,  2.0, -1.0,  3.0,& 
-       &         -1.0,  2.0, -1.0,  3.0,& 
-       &         -2.0,  1.0,  1.0,  3.0 &
-       &       /), &
-       &      SHAPE=(/4,  12/))
-  !
-  !  Schmid tensors.
-  !
-  REAL(RK) :: snrm(3, 12), sdir(3, 12), rescale
-  !
-  !  *** End:
-  !
-  !--------------*-------------------------------------------------------
-  !
-  SELECT CASE(CTYPE)
-     !
-  CASE (CLASS_FCC)
-     !
-     ALLOCATE(SCHMID(3, 3, 12))
-     !
-     schmid(1, 1, :) = cub_110(1, :)*cub_111(1, :)
-     schmid(2, 1, :) = cub_110(2, :)*cub_111(1, :)
-     schmid(3, 1, :) = cub_110(3, :)*cub_111(1, :)
-
-     schmid(1, 2, :) = cub_110(1, :)*cub_111(2, :)
-     schmid(2, 2, :) = cub_110(2, :)*cub_111(2, :)
-     schmid(3, 2, :) = cub_110(3, :)*cub_111(2, :)
-
-     schmid(1, 3, :) = cub_110(1, :)*cub_111(3, :)
-     schmid(2, 3, :) = cub_110(2, :)*cub_111(3, :)
-     schmid(3, 3, :) = cub_110(3, :)*cub_111(3, :)
-     !
-  CASE (CLASS_BCC)
-     !
-     ALLOCATE(SCHMID(3, 3, 12))
-     !
-     schmid(1, 1, :) = cub_111(1, :)*cub_110(1, :)
-     schmid(2, 1, :) = cub_111(2, :)*cub_110(1, :)
-     schmid(3, 1, :) = cub_111(3, :)*cub_110(1, :)
-
-     schmid(1, 2, :) = cub_111(1, :)*cub_110(2, :)
-     schmid(2, 2, :) = cub_111(2, :)*cub_110(2, :)
-     schmid(3, 2, :) = cub_111(3, :)*cub_110(2, :)
-
-     schmid(1, 3, :) = cub_111(1, :)*cub_110(3, :)
-     schmid(2, 3, :) = cub_111(2, :)*cub_110(3, :)
-     schmid(3, 3, :) = cub_111(3, :)*cub_110(3, :)
-     !
-  CASE (CLASS_HCP)
-     !
-     ALLOCATE(SCHMID(3, 3, 18))
-     !
-     !  Basal.
-     !
-     schmid(1, 1, 1:3) = hex_basal_sd(1, :)*hex_basal_sn(1, :)
-     schmid(2, 1, 1:3) = hex_basal_sd(2, :)*hex_basal_sn(1, :)
-     schmid(3, 1, 1:3) = hex_basal_sd(3, :)*hex_basal_sn(1, :)
-
-     schmid(1, 2, 1:3) = hex_basal_sd(1, :)*hex_basal_sn(2, :)
-     schmid(2, 2, 1:3) = hex_basal_sd(2, :)*hex_basal_sn(2, :)
-     schmid(3, 2, 1:3) = hex_basal_sd(3, :)*hex_basal_sn(2, :)
-
-     schmid(1, 3, 1:3) = hex_basal_sd(1, :)*hex_basal_sn(3, :)
-     schmid(2, 3, 1:3) = hex_basal_sd(2, :)*hex_basal_sn(3, :)
-     schmid(3, 3, 1:3) = hex_basal_sd(3, :)*hex_basal_sn(3, :)
-     !
-     !  Prismatic.
-     !
-     rescale  = RK_ONE/HRATIO_HCP_PRISM
-     !
-     schmid(1, 1, 4:6) = rescale * hex_pris_sd(1, :)*hex_pris_sn(1, :)
-     schmid(2, 1, 4:6) = rescale * hex_pris_sd(2, :)*hex_pris_sn(1, :)
-     schmid(3, 1, 4:6) = rescale * hex_pris_sd(3, :)*hex_pris_sn(1, :)
-
-     schmid(1, 2, 4:6) = rescale * hex_pris_sd(1, :)*hex_pris_sn(2, :)
-     schmid(2, 2, 4:6) = rescale * hex_pris_sd(2, :)*hex_pris_sn(2, :)
-     schmid(3, 2, 4:6) = rescale * hex_pris_sd(3, :)*hex_pris_sn(2, :)
-
-     schmid(1, 3, 4:6) = rescale * hex_pris_sd(1, :)*hex_pris_sn(3, :)
-     schmid(2, 3, 4:6) = rescale * hex_pris_sd(2, :)*hex_pris_sn(3, :)
-     schmid(3, 3, 4:6) = rescale * hex_pris_sd(3, :)*hex_pris_sn(3, :)
-     !
-     !       Pyramidal 1.
-     !
-     rescale  = 1.0d0/HRATIO_HCP
-     !
-     !         Convert Miller indices to spatial directions.
-     !
-     snrm(1, :) = hex_pyr1_sn(1, :)
-     snrm(2, :) = (2.0_RK*hex_pyr1_sn(2, :) + snrm(1, :))/RK_ROOT_3
-     snrm(3, :) = hex_pyr1_sn(4, :)/C_OVER_A
-
-     snrm = snrm / SPREAD(SOURCE=SQRT(SUM(snrm*snrm, DIM=1)),&
-          &   DIM=1, NCOPIES=3)
-
-     sdir(1, :) = 1.5_RK*hex_pyr1_sd(1, :)
-     sdir(2, :) =(hex_pyr1_sd(2, :) + 0.5_RK*hex_pyr1_sd(1, :))*RK_ROOT_3
-     sdir(3, :) = hex_pyr1_sd(4, :)*C_OVER_A
-
-     sdir = sdir / SPREAD(SOURCE=SQRT(SUM(sdir*sdir, DIM=1)),&
-          &   DIM=1, NCOPIES=3)
-
-
-     !         
-     schmid(1, 1, 7:18) = rescale*sdir(1, :)*snrm(1, :)
-     schmid(2, 1, 7:18) = rescale*sdir(2, :)*snrm(1, :)
-     schmid(3, 1, 7:18) = rescale*sdir(3, :)*snrm(1, :)
-
-     schmid(1, 2, 7:18) = rescale*sdir(1, :)*snrm(2, :)
-     schmid(2, 2, 7:18) = rescale*sdir(2, :)*snrm(2, :)
-     schmid(3, 2, 7:18) = rescale*sdir(3, :)*snrm(2, :)
-
-     schmid(1, 3, 7:18) = rescale*sdir(1, :)*snrm(3, :)
-     schmid(2, 3, 7:18) = rescale*sdir(2, :)*snrm(3, :)
-     schmid(3, 3, 7:18) = rescale*sdir(3, :)*snrm(3, :)
-     !
-  CASE DEFAULT 
-     !
-  END SELECT
-  !
-END SUBROUTINE SchmidTensors
-!
-!  *** Program Unit:  subroutine
-!  ***    Unit Name:  CrystalTypeDescribe
-!
-!  *** Unit Declaration: 
-!
-SUBROUTINE CrystalTypeDescribe(self)
-  !
-  !  ***  Description:  
-  !
-  !  Print information about crystal type.
-  !
-  !  *** Arguments:
-  !
-  !  self -- this crystal type
-  !
-  TYPE(CrystalTypeType) :: self
-  !
-  !  *** Locals:
-  !
-
-  !  *** End:
-  !
-  !--------------*-------------------------------------------------------
-  !
-  !
-END SUBROUTINE CrystalTypeDescribe
-!
-!  *** Program Unit:  subroutine
-!  ***    Unit Name:  CrystalTypeGet
-!
-!  *** Unit Declaration: 
-!
-SUBROUTINE CrystalTypeGet(self, DEV, SKW, PPTRANS, VERTICES,&
-     &   NUMSLIP, NUMVERTICES)
-  !
-  !  ***  Description:  
-  !  
-  !  Return deviatoric parts of Schmid tensors.
-  !
-  !  *** Arguments:
-  !
-  !  self -- the CrystalType object
-  !
-  TYPE(CrystalTypeType) :: self
-  !
-  !  DEV -- deviatoric part of Schmid tensors
-  !
-  REAL(RK), POINTER, OPTIONAL  :: DEV(:, :)
-  !
-  !  SKW  -- skew part of Schmid tensors
-  !
-  REAL(RK), POINTER, OPTIONAL  :: SKW(:, :)
-  !
-  !  PPTRANS -- matrices of Schmid diads
-  !
-  REAL(RK), POINTER, OPTIONAL  :: PPTRANS(:, :, :)
-  !
-  !  VERTICES -- vertices in 5-vector form
-  !
-  REAL(RK), POINTER, OPTIONAL  :: VERTICES(:, :)
-  !
-  !  NUMSLIP -- number of slip systems
-  !
-  INTEGER, OPTIONAL :: NUMSLIP 
-  !
-  !  NUMVERTICES -- number of vertices
-  !
-  INTEGER, OPTIONAL :: NUMVERTICES
-  !
-  !  *** Locals:
-  !
-  INTEGER :: DSHAPE(2), SSHAPE(2), ARGPPTSHAPE(3), MYPPTSHAPE(3), i
-  !
-  REAL(RK), POINTER :: mydev(:, :)
-  !
-  !  *** End:
-  !
-  !--------------*-------------------------------------------------------
-  !
-
-  if (PRESENT(DEV)) then
-     !
-     SSHAPE = (/5, self%numslip/)
-     !SHAPE(self%schmid_sym)
-     !
-     if (ASSOCIATED(DEV)) then
+    END FUNCTION CRYSTALTYPECREATE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SCHMIDTENSORS(CTYPE, SCHMID, C_OVER_A, HRATIO_HCP, &
+        & HRATIO_HCP_PRISM)
+    !
+    ! Create Schmid tensors for specified crystal type
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! CTYPE: Crystal type
+    ! SCHMID: Schmid tensors
+    ! C_OVER_A: Hexagonal c/a ratio
+    ! HRATIO_HCP: Ratio of pyramidal strengths to basal/prismatic
+    !
+    INTEGER, INTENT(IN) :: CTYPE
+    REAL(RK), POINTER :: SCHMID(:, :, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: C_OVER_A
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP
+    REAL(RK), INTENT(IN), OPTIONAL :: HRATIO_HCP_PRISM
+    !
+    ! Locals:
+    !
+    ! Parameters
+    !
+    REAL(RK), PARAMETER :: Z = RK_ZERO
+    REAL(RK), PARAMETER :: P2 = RK_ONE / RK_ROOT_2
+    REAL(RK), PARAMETER :: P3 = RK_ONE / RK_ROOT_3
+    REAL(RK), PARAMETER :: M2 = -P2
+    REAL(RK), PARAMETER :: M3 = -P3
+    !
+    ! Cubic data
+    !
+    ! Parameters
+    !
+    REAL(RK), PARAMETER :: P6_1 = RK_ONE / RK_ROOT_6
+    REAL(RK), PARAMETER :: P6_2 = RK_TWO * P6_1
+    REAL(RK), PARAMETER :: M6_1 = -P6_1
+    REAL(RK), PARAMETER :: M6_2 = -P6_2
+    REAL(RK), PARAMETER :: P14_1 = RK_ONE/RK_ROOT_14
+    REAL(RK), PARAMETER :: P14_2 = RK_TWO/RK_ROOT_14
+    REAL(RK), PARAMETER :: P14_3 = RK_THREE/RK_ROOT_14
+    REAL(RK), PARAMETER :: M14_1=-P14_1
+    REAL(RK), PARAMETER :: M14_2=-P14_2
+    REAL(RK), PARAMETER :: M14_3=-P14_3
+    !
+    ! Slip normals and directions
+    !
+    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_111_DAT = (/ &
+        & P3, P3, P3,     P3, P3, P3,    P3, P3, P3, &
+        & P3, P3, M3,     P3, P3, M3,    P3, P3, M3, &
+        & P3, M3, P3,     P3, M3, P3,    P3, M3, P3, &
+        & P3, M3, M3,     P3, M3, M3,    P3, M3, M3  &
+        & /)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
+        & CUB_111 = RESHAPE(SOURCE = CUB_111_DAT, SHAPE = (/3, 12/))
+    !
+    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_110_DAT = (/ &
+        & Z, P2, M2,     P2, Z, M2,     P2, M2, Z, &
+        & Z, P2, P2,     P2, Z, P2,     P2, M2, Z, &
+        & Z, P2, P2,     P2, Z, M2,     P2, P2, Z, &
+        & Z, P2, M2,     P2, Z, P2,     P2, P2, Z  &
+        & /)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
+        & CUB_110 = RESHAPE(SOURCE = CUB_110_DAT, SHAPE = (/3, 12/))
+    !
+    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_211_DAT = (/&
+       & M6_1, M6_1, P6_2,     M6_1, P6_2, M6_1,     P6_2, M6_1, M6_1, &
+       & M6_1, M6_1, M6_2,     M6_1, P6_2, P6_1,     P6_2, M6_1, P6_1, &
+       & M6_1, P6_1, P6_2,     M6_1, M6_2, M6_1,     P6_2, P6_1, M6_1, &
+       & M6_1, P6_1, M6_2,     M6_1, M6_2, P6_1,     P6_2, P6_1, P6_1  &
+       & /)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
+       & CUB_211 = RESHAPE(SOURCE = CUB_211_DAT, SHAPE = (/3, 12/))
+    !
+    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_123_A_DAT = (/ &
+        & M14_1, M14_2, P14_3,   M14_1, P14_3, M14_2,   P14_3, M14_1, M14_2, &
+        & M14_1, M14_2, M14_3,   M14_1, P14_3, P14_2,   P14_3, M14_1, P14_2, &
+        & M14_1, P14_2, P14_3,   M14_1, M14_3, M14_2,   P14_3, P14_1, M14_2, &
+        & M14_1, P14_2, M14_3,   M14_1, M14_3, P14_2,   P14_3, P14_1, P14_2  &
+        & /)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
+        & CUB_123_A = RESHAPE(SOURCE = CUB_123_A_DAT, SHAPE = (/3, 12/))
+    !
+    REAL(RK), PARAMETER, DIMENSION(36) :: CUB_123_B_DAT = (/ &
+       & M14_2, M14_1, P14_3,   M14_2, P14_3, M14_1,   P14_3, M14_2, M14_1, &
+       & M14_2, M14_1, M14_3,   M14_2, P14_3, P14_1,   P14_3, M14_2, P14_1, &
+       & M14_2, P14_1, P14_3,   M14_2, M14_3, M14_1,   P14_3, P14_2, M14_1, &
+       & M14_2, P14_1, M14_3,   M14_2, M14_3, P14_1,   P14_3, P14_2, P14_1  &
+       & /)
+    REAL(RK), PARAMETER, DIMENSION(3, 12) :: &
+       & CUB_123_B = RESHAPE(SOURCE = CUB_123_B_DAT, SHAPE = (/3, 12/))
+    !
+    ! HCP Data
+    !
+    ! Parameters
+    !
+    REAL(RK), PARAMETER :: ONE = 1.0_RK, HALF = 0.5_RK
+    REAL(RK), PARAMETER :: COS_30 = HALF*RK_ROOT_3
+    !
+    ! Basal plane normals
+    !
+    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
+        & HEX_BASAL_SN = RESHAPE(&
+            & SOURCE = (/&
+                & Z, Z, ONE,     Z, Z, ONE,     Z, Z, ONE &
+                & /), &
+            & SHAPE = (/3, 3/))
+    !
+    ! Basal slip directions
+    !
+    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
+        & HEX_BASAL_SD = RESHAPE(&
+            & SOURCE = (/&
+                & ONE, Z, Z,     -HALF, COS_30, Z,     -HALF,  -COS_30, Z &
+                & /), &
+            & SHAPE = (/3, 3/))
+    !
+    ! Prismatic plane normals
+    !
+    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
+        & HEX_PRIS_SN = RESHAPE(&
+            & SOURCE = (/&
+                & Z, ONE, Z,     -COS_30, -HALF,  Z,     COS_30, -HALF,  Z &
+                & /), &
+            & SHAPE = (/3, 3/))
+    !
+    ! Prismatic slip directions
+    !
+    REAL(RK), PARAMETER, DIMENSION(3, 3) :: &
+        & HEX_PRIS_SD = RESHAPE(&
+            & SOURCE = (/&
+                & ONE, Z, Z,     -HALF, COS_30, Z,     -HALF, -COS_30, Z &
+                & /), &
+            & SHAPE = (/3, 3/))
+    !
+    ! Pyramidal plane normals (in Miller-Bravais notation)
+    !
+    REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
+        & HEX_PYR1_SN = RESHAPE( &
+            & SOURCE = (/ &
+                & 1.0,  0.0, -1.0,  1.0, &
+                & 1.0,  0.0, -1.0,  1.0, &
+                & 0.0,  1.0, -1.0,  1.0, &
+                & 0.0,  1.0, -1.0,  1.0, &
+                & -1.0,  1.0,  0.0,  1.0, &
+                & -1.0,  1.0,  0.0,  1.0, &
+                & -1.0,  0.0,  1.0,  1.0, &
+                & -1.0,  0.0,  1.0,  1.0, &
+                & 0.0, -1.0,  1.0,  1.0, &
+                & 0.0, -1.0,  1.0,  1.0, &
+                & 1.0, -1.0,  0.0,  1.0, &
+                & 1.0, -1.0,  0.0,  1.0  &
+                & /), &
+            & SHAPE = (/4,  12/))
+    !
+    ! Pyramidal slip directions (in Miller-Bravais notation)
+    !
+    REAL(RK), PARAMETER, DIMENSION(4, 12) :: &
+        & HEX_PYR1_SD = RESHAPE(&
+            & SOURCE = (/ &
+                & -2.0,  1.0,  1.0,  3.0, &
+                & -1.0, -1.0,  2.0,  3.0, &
+                & -1.0, -1.0,  2.0,  3.0, &
+                & 1.0, -2.0,  1.0,  3.0, &
+                & 1.0, -2.0,  1.0,  3.0, &
+                & 2.0, -1.0, -1.0,  3.0, &
+                & 2.0, -1.0, -1.0,  3.0, &
+                & 1.0,  1.0, -2.0,  3.0, &
+                & 1.0,  1.0, -2.0,  3.0, &
+                & -1.0,  2.0, -1.0,  3.0, &
+                & -1.0,  2.0, -1.0,  3.0, &
+                & -2.0,  1.0,  1.0,  3.0  &
+                & /), &
+            & SHAPE = (/4,  12/))
+    !
+    REAL(RK) :: SNRM(3, 12)
+    REAL(RK) :: SDIR(3, 12)
+    REAL(RK) :: RESCALE
+    !
+    ! Construct Schmid tensors
+    !
+    SELECT CASE(CTYPE)
+    !
+    CASE (CLASS_FCC)
         !
-        !  Could check dimensions here ...
+        ALLOCATE(SCHMID(3, 3, 12))
         !
-        DSHAPE = SHAPE(DEV)
-        if ( (DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) then
-           DEALLOCATE(DEV)
-           ALLOCATE(DEV(SSHAPE(1), SSHAPE(2)))
-        end if
-     else
-        ALLOCATE(DEV(SSHAPE(1), SSHAPE(2)))
-     end if
-     !
-     call Tensor3DDecompose(self%schmid_3x3, &
-          &  DEV=DEV, DECOMP=self%decomp)
-     !
-  end if
-  !
-  if (PRESENT(SKW)) then
-     !
-     SSHAPE = (/3, self%numslip/)
-     !
-     if (ASSOCIATED(SKW)) then
+        SCHMID(1, 1, :) = CUB_110(1, :) * CUB_111(1, :)
+        SCHMID(2, 1, :) = CUB_110(2, :) * CUB_111(1, :)
+        SCHMID(3, 1, :) = CUB_110(3, :) * CUB_111(1, :)
+        SCHMID(1, 2, :) = CUB_110(1, :) * CUB_111(2, :)
+        SCHMID(2, 2, :) = CUB_110(2, :) * CUB_111(2, :)
+        SCHMID(3, 2, :) = CUB_110(3, :) * CUB_111(2, :)
+        SCHMID(1, 3, :) = CUB_110(1, :) * CUB_111(3, :)
+        SCHMID(2, 3, :) = CUB_110(2, :) * CUB_111(3, :)
+        SCHMID(3, 3, :) = CUB_110(3, :) * CUB_111(3, :)
         !
-        !  Could check dimensions here ...
+    CASE (CLASS_BCC)
         !
-        DSHAPE = SHAPE(SKW)
-        if ( (DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) then
-           DEALLOCATE(SKW)
-           ALLOCATE(SKW(SSHAPE(1), SSHAPE(2)))
-        end if
-     else
-        ALLOCATE(SKW(SSHAPE(1), SSHAPE(2)))
-     end if
-     !
-     call Tensor3DDecompose(self%schmid_3x3, &
-          &  SKW=SKW, DECOMP=self%decomp)
-     !
-  end if
-  !
-  if (PRESENT(PPTRANS)) then
-     !
-     MYPPTSHAPE = (/5, 5, self%numslip/)
-     !
-     if (ASSOCIATED(PPTRANS)) then
+        ALLOCATE(SCHMID(3, 3, 12))
         !
-        !  Could check dimensions here ...
+        SCHMID(1, 1, :) = CUB_111(1, :) * CUB_110(1, :)
+        SCHMID(2, 1, :) = CUB_111(2, :) * CUB_110(1, :)
+        SCHMID(3, 1, :) = CUB_111(3, :) * CUB_110(1, :)
+        SCHMID(1, 2, :) = CUB_111(1, :) * CUB_110(2, :)
+        SCHMID(2, 2, :) = CUB_111(2, :) * CUB_110(2, :)
+        SCHMID(3, 2, :) = CUB_111(3, :) * CUB_110(2, :)
+        SCHMID(1, 3, :) = CUB_111(1, :) * CUB_110(3, :)
+        SCHMID(2, 3, :) = CUB_111(2, :) * CUB_110(3, :)
+        SCHMID(3, 3, :) = CUB_111(3, :) * CUB_110(3, :)
         !
-        ARGPPTSHAPE = SHAPE(PPTRANS)
-        if (   (ARGPPTSHAPE(1) /= MYPPTSHAPE(1)) .OR. &
-             & (ARGPPTSHAPE(2) /= MYPPTSHAPE(2)) .OR. &
-             & (ARGPPTSHAPE(3) /= MYPPTSHAPE(3))  ) then
-           DEALLOCATE(PPTRANS)
-           ALLOCATE(PPTRANS(MYPPTSHAPE(1), MYPPTSHAPE(2), MYPPTSHAPE(3)))
-        end if
-     else
-        ALLOCATE(PPTRANS(MYPPTSHAPE(1), MYPPTSHAPE(2), MYPPTSHAPE(3)))
-     end if
-     !
-     ALLOCATE(mydev(5, self%numslip))
-     !
-     call Tensor3DDecompose(self%schmid_3x3, DEV=mydev, DECOMP=self%decomp)
-     !
-     do i=1, self%numslip
-        PPTRANS(:, :, i) = MATMUL(&
-             &  RESHAPE(mydev(:, i), SHAPE=(/5, 1/)), &
-             &  RESHAPE(mydev(:, i), SHAPE=(/1, 5/)) )
-     end do
-     !
-     DEALLOCATE(mydev)
-     !
-  end if
-  !
-  if (PRESENT(VERTICES)) then
-     !
-     !
-     SSHAPE = (/5, self%numvertices/)
-     !
-     !      
-     if (ASSOCIATED(VERTICES)) then
+    CASE (CLASS_HCP)
         !
-        !  Could check dimensions here ...
+        ALLOCATE(SCHMID(3, 3, 18))
         !
-        DSHAPE = SHAPE(VERTICES)
-        if ( (DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) then
-           DEALLOCATE(VERTICES)
-           ALLOCATE(VERTICES(SSHAPE(1), SSHAPE(2)))
-        end if
-     else
-        ALLOCATE(VERTICES(SSHAPE(1), SSHAPE(2)))
-     end if
-     !
-     VERTICES = self%vertices
-     !
-  end if
-  !
-  if (PRESENT(NUMSLIP)) then
-     NUMSLIP = self%numslip
-  end if
-  !
-  if (PRESENT(NUMVERTICES)) then
-     NUMVERTICES = self%numvertices
-  end if
-  !
-  !  Need call to get vertices as 3x3.
-  !
-END SUBROUTINE CrystalTypeGet
+        ! Basal
+        !
+        SCHMID(1, 1, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(1, :)
+        SCHMID(2, 1, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(1, :)
+        SCHMID(3, 1, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(1, :)
+        SCHMID(1, 2, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(2, :)
+        SCHMID(2, 2, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(2, :)
+        SCHMID(3, 2, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(2, :)
+        SCHMID(1, 3, 1:3) = HEX_BASAL_SD(1, :) * HEX_BASAL_SN(3, :)
+        SCHMID(2, 3, 1:3) = HEX_BASAL_SD(2, :) * HEX_BASAL_SN(3, :)
+        SCHMID(3, 3, 1:3) = HEX_BASAL_SD(3, :) * HEX_BASAL_SN(3, :)
+        !
+        ! Prismatic
+        !
+        RESCALE  = RK_ONE / HRATIO_HCP_PRISM
+        !
+        SCHMID(1, 1, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(1, :)
+        SCHMID(2, 1, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(1, :)
+        SCHMID(3, 1, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(1, :)
+        SCHMID(1, 2, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(2, :)
+        SCHMID(2, 2, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(2, :)
+        SCHMID(3, 2, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(2, :)
+        SCHMID(1, 3, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(3, :)
+        SCHMID(2, 3, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(3, :)
+        SCHMID(3, 3, 4:6) = RESCALE * HEX_PRIS_SD(3, :) * HEX_PRIS_SN(3, :)
+        !
+        ! Pyramidal
+        !
+        RESCALE  = RK_ONE / HRATIO_HCP
+        !
+        ! Convert Miller indices to spatial directions.
+        !
+        SNRM(1, :) = HEX_PYR1_SN(1, :)
+        SNRM(2, :) = (2.0_RK * HEX_PYR1_SN(2, :) + SNRM(1, :)) / RK_ROOT_3
+        SNRM(3, :) = HEX_PYR1_SN(4, :) / C_OVER_A
+        SNRM = SNRM / SPREAD(SOURCE = SQRT(SUM(SNRM * SNRM, DIM = 1)), &
+            & DIM = 1, NCOPIES = 3)
+
+        SDIR(1, :) = 1.5_RK  *HEX_PYR1_SD(1, :)
+        SDIR(2, :) =(HEX_PYR1_SD(2, :) + 0.5_RK * HEX_PYR1_SD(1, :)) * RK_ROOT_3
+        SDIR(3, :) = HEX_PYR1_SD(4, :) * C_OVER_A
+        SDIR = SDIR / SPREAD(SOURCE = SQRT(SUM(SDIR * SDIR, DIM = 1)), &
+            & DIM = 1, NCOPIES = 3)
+        !
+        SCHMID(1, 1, 7:18) = RESCALE * SDIR(1, :) * SNRM(1, :)
+        SCHMID(2, 1, 7:18) = RESCALE * SDIR(2, :) * SNRM(1, :)
+        SCHMID(3, 1, 7:18) = RESCALE * SDIR(3, :) * SNRM(1, :)
+        SCHMID(1, 2, 7:18) = RESCALE * SDIR(1, :) * SNRM(2, :)
+        SCHMID(2, 2, 7:18) = RESCALE * SDIR(2, :) * SNRM(2, :)
+        SCHMID(3, 2, 7:18) = RESCALE * SDIR(3, :) * SNRM(2, :)
+        SCHMID(1, 3, 7:18) = RESCALE * SDIR(1, :) * SNRM(3, :)
+        SCHMID(2, 3, 7:18) = RESCALE * SDIR(2, :) * SNRM(3, :)
+        SCHMID(3, 3, 7:18) = RESCALE * SDIR(3, :) * SNRM(3, :)
+        !
+    CASE DEFAULT
+        !
+    END SELECT
+    !
+    END SUBROUTINE SCHMIDTENSORS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE CRYSTALTYPEDESCRIBE(SELF)
+    !
+    ! Print information about crystal type
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SELF: This crystal type
+    !
+    TYPE(CRYSTALTYPETYPE) :: SELF
+    !
+    !---------------------------------------------------------------------------
+    !
+    END SUBROUTINE CRYSTALTYPEDESCRIBE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE CRYSTALTYPEGET(SELF, DEV, SKW, PPTRANS, VERTICES, NUMSLIP, &
+        & NUMVERTICES)
+    !
+    ! Return deviatoric parts of Schmid tensors
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    ! SELF: The CrystalType object
+    ! DEV: Deviatoric part of Schmid tensors
+    ! SKW: Skew part of Schmid tensors
+    ! PPTRANS: Matrices of Schmid diads
+    ! VERTICES: Vertices in 5-vector form
+    ! NUMSLIP: Number of slip systems
+    ! NUMVERTICES: Number of vertices
+    !
+    TYPE(CRYSTALTYPETYPE) :: SELF
+    REAL(RK), POINTER, OPTIONAL :: DEV(:, :)
+    REAL(RK), POINTER, OPTIONAL :: SKW(:, :)
+    REAL(RK), POINTER, OPTIONAL :: PPTRANS(:, :, :)
+    REAL(RK), POINTER, OPTIONAL :: VERTICES(:, :)
+    INTEGER, OPTIONAL :: NUMSLIP
+    INTEGER, OPTIONAL :: NUMVERTICES
+    !
+    ! Locals:
+    !
+    INTEGER :: DSHAPE(2)
+    INTEGER :: SSHAPE(2)
+    INTEGER :: ARGPPTSHAPE(3)
+    INTEGER :: MYPPTSHAPE(3)
+    INTEGER :: I
+    !
+    REAL(RK), POINTER :: MYDEV(:, :)
+    !
+    !---------------------------------------------------------------------------
+    !
+    IF (PRESENT(DEV)) THEN
+        !
+        SSHAPE = (/5, SELF%NUMSLIP/)
+        !SHAPE(SELF%schmid_sym)
+        !
+        IF (ASSOCIATED(DEV)) THEN
+            !
+            ! Could check dimensions here ...
+            !
+            DSHAPE = SHAPE(DEV)
+            !
+            IF ( (DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) THEN
+                !
+                DEALLOCATE(DEV)
+                ALLOCATE(DEV(SSHAPE(1), SSHAPE(2)))
+                !
+            END IF
+            !
+        ELSE
+            !
+            ALLOCATE(DEV(SSHAPE(1), SSHAPE(2)))
+            !
+        END IF
+        !
+        CALL TENSOR3DDECOMPOSE(SELF%SCHMID_3X3, DEV = DEV, DECOMP = SELF%DECOMP)
+    !
+    END IF
+    !
+    IF (PRESENT(SKW)) THEN
+        !
+        SSHAPE = (/3, SELF%NUMSLIP/)
+        !
+        IF (ASSOCIATED(SKW)) THEN
+            !
+            ! Could check dimensions here ...
+            !
+            DSHAPE = SHAPE(SKW)
+            !
+            IF ( (DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) THEN
+                !
+                DEALLOCATE(SKW)
+                ALLOCATE(SKW(SSHAPE(1), SSHAPE(2)))
+                !
+            END IF
+            !
+        ELSE
+            !
+            ALLOCATE(SKW(SSHAPE(1), SSHAPE(2)))
+            !
+        END IF
+        !
+        CALL TENSOR3DDECOMPOSE(SELF%SCHMID_3X3, SKW = SKW, DECOMP = SELF%DECOMP)
+        !
+    END IF
+    !
+    IF (PRESENT(PPTRANS)) THEN
+        !
+        MYPPTSHAPE = (/5, 5, SELF%NUMSLIP/)
+        !
+        IF (ASSOCIATED(PPTRANS)) THEN
+            !
+            !  Could check dimensions here ...
+            !
+            ARGPPTSHAPE = SHAPE(PPTRANS)
+            !
+            IF ((ARGPPTSHAPE(1) /= MYPPTSHAPE(1)) .OR. &
+                & (ARGPPTSHAPE(2) /= MYPPTSHAPE(2)) .OR. &
+                & (ARGPPTSHAPE(3) /= MYPPTSHAPE(3))  ) THEN
+                !
+                DEALLOCATE(PPTRANS)
+                ALLOCATE(PPTRANS(MYPPTSHAPE(1), MYPPTSHAPE(2), MYPPTSHAPE(3)))
+                !
+            END IF
+            !
+        ELSE
+            !
+            ALLOCATE(PPTRANS(MYPPTSHAPE(1), MYPPTSHAPE(2), MYPPTSHAPE(3)))
+            !
+        END IF
+        !
+        ALLOCATE(MYDEV(5, SELF%NUMSLIP))
+        !
+        CALL TENSOR3DDECOMPOSE(SELF%SCHMID_3X3, DEV = MYDEV, &
+            & DECOMP = SELF%DECOMP)
+        !
+        DO I = 1, SELF%NUMSLIP
+            !
+            PPTRANS(:, :, I) = MATMUL(&
+                & RESHAPE(MYDEV(:, I), SHAPE = (/5, 1/)), &
+                & RESHAPE(MYDEV(:, I), SHAPE=  (/1, 5/)) )
+            !
+        END DO
+        !
+        DEALLOCATE(MYDEV)
+        !
+    END IF
+    !
+    IF (PRESENT(VERTICES)) THEN
+        !
+        SSHAPE = (/5, SELF%NUMVERTICES/)
+        !
+        IF (ASSOCIATED(VERTICES)) THEN
+            !
+            !  Could check dimensions here ...
+            !
+            DSHAPE = SHAPE(VERTICES)
+            !
+            IF ((DSHAPE(1) /= SSHAPE(1)) .OR. (DSHAPE(2) /= SSHAPE(2))) THEN
+                !
+                DEALLOCATE(VERTICES)
+                ALLOCATE(VERTICES(SSHAPE(1), SSHAPE(2)))
+                !
+            END IF
+            !
+        ELSE
+            !
+            ALLOCATE(VERTICES(SSHAPE(1), SSHAPE(2)))
+            !
+        END IF
+        !
+        VERTICES = SELF%VERTICES
+        !
+    END IF
+    !
+    IF (PRESENT(NUMSLIP)) THEN
+        !
+        NUMSLIP = SELF%NUMSLIP
+        !
+    END IF
+    !
+    IF (PRESENT(NUMVERTICES)) THEN
+        !
+        NUMVERTICES = SELF%NUMVERTICES
+        !
+    END IF
+    !
+    ! Need call to get vertices as 3X3.
+    !
+    END SUBROUTINE CRYSTALTYPEGET
     !
     !===========================================================================
     !
     SUBROUTINE GET_VERTICES(CTYPE, VERTICES)
     !
-    ! Return 3x3 vertex tensors in place of legacy vertices files.
+    ! Return 3X3 vertex tensors in place of legacy VERTICES files.
     !
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! CTYPE: Crystal class type (FCC, BCC, HCP)
-    ! VERTICES: 3D array containing vertices for a specific crystal type.
+    ! CTYPE: Crystal CLASS type (FCC, BCC, HCP)
+    ! VERTICES: 3D array containing VERTICES for a specific crystal type.
     !
     INTEGER, INTENT(IN) :: CTYPE
     REAL(RK), POINTER, INTENT(OUT) :: VERTICES(:, :, :)
@@ -1580,7 +1540,7 @@ END SUBROUTINE CrystalTypeGet
     !
     !---------------------------------------------------------------------------
     !
-    ! Check class type and return appropriate tensors.
+    ! Check CLASS type and return appropriate tensors.
     IF (CTYPE .EQ. 1) THEN ! CLASS_FCC
         !
         VERTICES = VERT_FCC
@@ -1599,4 +1559,4 @@ END SUBROUTINE CrystalTypeGet
     !
     END SUBROUTINE GET_VERTICES
     !
-END MODULE CrystalTypeModule 
+END MODULE CRYSTAL_TYPE_MOD

@@ -7,6 +7,7 @@ MODULE CONVERGENCE_MOD
 ! Convergence tolerances: data and input routines
 !
 ! Contains subroutines:
+! Various subroutines related to convergence options
 !
 ! Contains functions:
 ! CONVERGENCEKEYWORDINPUT: Keyword input for module

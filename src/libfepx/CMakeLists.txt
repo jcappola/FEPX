@@ -11,7 +11,7 @@ file(GLOB libfepx_src
     aniso_vp_lag.f90
     boundary_conditions_mod.f90
     convergence_mod.f90
-    CrystalTypeModule.f90
+    crystal_type_mod.f90
     DimsModule.f90
     Dpeff.f90
     driver_iso_vp_mod.f90
