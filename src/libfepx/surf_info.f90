@@ -7,7 +7,7 @@ MODULE surf_info_mod
   ! Maintain surface information.
   !
   USE parallel_mod
-  USE shape_2_mod
+  USE shape_2d_mod
   USE quadrature_mod
   USE surface_mod
   USE IntrinsicTypesModule, RK=>REAL_KIND
