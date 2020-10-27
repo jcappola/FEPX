@@ -47,7 +47,7 @@ file(GLOB libfepx_src
     stress_solve_vp_lag.f90
     surface.f90
     surf_info.f90
-    Tensor3DModule.f90
+    tensor_3d_mod.f90
     units.f90
     write_output_mod.f90
     )

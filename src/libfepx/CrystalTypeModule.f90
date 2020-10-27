@@ -21,7 +21,7 @@ USE IntrinsicTypesModule, &
      &  RK=>REAL_KIND, IK=>INTEGER_KIND, LK=>LOGICAL_KIND
 USE ConstantsModule
 USE FilesModule
-USE Tensor3DModule 
+USE tensor_3d_mod
 !
 !  *** End:
 !
