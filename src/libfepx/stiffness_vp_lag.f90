@@ -12,7 +12,7 @@ MODULE StiffnessVpModule
   USE shape_3d_mod
   USE DIMENSIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
-  USE MaterialMatrixVpModule
+  USE MATERIAL_MATRIX_VP_MOD
 
   IMPLICIT NONE
   
