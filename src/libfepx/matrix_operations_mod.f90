@@ -27,6 +27,7 @@ MODULE MATRIX_OPERATIONS_MOD
 ! MAT_X_MATS3: Multiply array of 3x3 matrices by a fixed 3x3 matrix, tranposed.
 ! MAT_X_VEC5: Multiply array of matrices times array of vectors. (5 dim)
 ! MAT_X_VEC5_SER: Serial version (one element).
+! MATRIX_VEC_MULT: Matrix-vector multiplication routine (RC, 2017)
 ! MATT_X_MAT3: Matrix multiplication by transpose (first matrix T). (3x3)
 ! NORM_VEC: Compute 2-norm for array of 5-vectors.
 ! ROT_MAT_SKEW: Construct 3x3 rotation matrix acting on skew-matrix 3-vectors.
@@ -1124,6 +1125,43 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE MAT_X_VEC5_SER
+    !
+    !===========================================================================
+    !
+    SUBROUTINE MATRIX_VEC_MULT(M, V, MV, DIM)
+    !
+    ! A simple matrix vector multiplication routine that takes advantage of the
+    !   compiler's vectorization optimizations. It ends up being faster than
+    !   using the built in Fortran matmul method (RC 2017).
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! M: Array of matrices
+    ! V: Array of vectors
+    ! MV: Array of products of M*V
+    ! DIM:
+    !
+    REAL(RK), INTENT(IN) :: M(0:DIM-1,0:DIM-1)
+    REAL(RK), INTENT(IN) :: V(0:DIM-1)
+    REAL(RK), INTENT(OUT) :: MV(0:DIM-1)
+    INTEGER, INTENT(IN) :: DIM
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    MV = 0.0_RK
+    !
+    DO I = 0, DIM - 1
+        !
+        MV(:) = MV(:) + M(:, I) * V(I)
+        !
+    END DO
+    !
+    END SUBROUTINE MATRIX_VEC_MULT
     !
     !===========================================================================
     !

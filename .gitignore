@@ -31,3 +31,8 @@
 *.toc
 
 fepx.pdf
+
+# Ignore sed -e files
+VERSIONS-e
+*.f90-e
+*.texi-e
