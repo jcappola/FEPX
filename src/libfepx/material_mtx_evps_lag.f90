@@ -8,7 +8,7 @@ MODULE MaterialMatrixEvpsModule
   USE DIMENSIONS_MOD
   USE units_mod
 
-  use KinematicsModule
+  USE KINEMATICS_MOD
   USE READ_INPUT_MOD
   USE microstructure_mod
   USE MATRIX_OPERATIONS_MOD
