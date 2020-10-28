@@ -20,7 +20,6 @@ file(GLOB libfepx_src
     driver_triaxcsr_mod.f90
     driver_utilities_mod.f90
     elemental_variables_utils_mod.f90
-    F90UtilitiesModule.f90
     fiber_average_mod.f90
     hardening_mod.f90
     hart.f90
@@ -42,7 +41,6 @@ file(GLOB libfepx_src
     shape_3d_mod.f90
     StiffnessEvpsModule.f90
     stiffness_vp_lag.f90
-    stress_deform_lag.f90
     stress_solve_evps_mod.f90
     stress_solve_vp_lag.f90
     surface_mod.f90
