@@ -25,7 +25,7 @@ file(GLOB libfepx_src
     itstress_evps_lag.f90
     itstress_vp_lag.f90
     kinematics_mod.f90
-    material_mtx_evps_lag.f90
+    material_matrix_evps_mod.f90
     material_matrix_vp_mod.f90
     read_input_mod.f90
     matrix_operations_mod.f90
