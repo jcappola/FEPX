@@ -15,6 +15,7 @@ MODULE ItMethodVpModule
   USE DIMENSIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE StiffnessVpModule
+USE CONJUGATE_GRADIENT_MOD
 
   IMPLICIT NONE
 
@@ -56,7 +57,7 @@ CONTAINS
 !
 !     Locals:
 !
-      INTEGER :: iter, idiv, i, j, cg_solver_ebe, cg_iter_out
+      INTEGER :: iter, idiv, i, j, cg_iter_out
       INTEGER :: cg_max_iters
       REAL(RK) :: cg_tol
 !

@@ -17,6 +17,7 @@ MODULE ItMethodEvpsModule
   USE MATRIX_OPERATIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE WRITE_OUTPUT_MOD
+USE CONJUGATE_GRADIENT_MOD
 
   IMPLICIT NONE
 
@@ -96,7 +97,7 @@ CONTAINS
 
       INTEGER, PARAMETER :: NR_SLOPE_START = 2
 
-      INTEGER  :: itmethod, idiv, i, j, k, cg_solver_ebe, cg_iter_out, ier
+      INTEGER  :: itmethod, idiv, i, j, k, cg_iter_out, ier
       INTEGER :: cg_max_iters, auto_time
       REAL(RK) :: cg_tol
       REAL(RK) :: nl_tol_strict, nl_tol_loose, nl_tol_min
