@@ -22,7 +22,6 @@ file(GLOB libfepx_src
     elemental_variables_utils_mod.f90
     fiber_average_mod.f90
     hardening_mod.f90
-    hart.f90
     itstress_evps_lag.f90
     itstress_vp_lag.f90
     KinematicsModule.f90
