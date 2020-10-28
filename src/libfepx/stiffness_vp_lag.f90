@@ -10,7 +10,7 @@ MODULE StiffnessVpModule
   USE quadrature_mod
   USE READ_INPUT_MOD
   USE shape_3d_mod
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE MaterialMatrixVpModule
 

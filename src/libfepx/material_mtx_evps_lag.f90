@@ -5,7 +5,7 @@
 MODULE MaterialMatrixEvpsModule
 
   USE IntrinsicTypesModule, RK=>REAL_KIND
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE units_mod
 
   use KinematicsModule

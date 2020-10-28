@@ -8,7 +8,7 @@ MODULE StiffnessEvpsModule
     USE parallel_matrix_mod
 
     USE IntrinsicTypesModule, RK=>REAL_KIND
-    USE DimsModule
+    USE DIMENSIONS_MOD
     USE units_mod
 
     USE quadrature_mod

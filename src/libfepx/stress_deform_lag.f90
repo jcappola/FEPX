@@ -13,7 +13,7 @@
 !
       USE parallel_mod
       USE READ_INPUT_MOD
-      USE DimsModule
+      USE DIMENSIONS_MOD
       USE IntrinsicTypesModule, RK=>REAL_KIND
       USE MATRIX_OPERATIONS_MOD
       use KinematicsModule
@@ -278,7 +278,7 @@
       USE quadrature_mod
       USE READ_INPUT_MOD
       USE shape_3d_mod
-      USE DimsModule
+      USE DIMENSIONS_MOD
       USE IntrinsicTypesModule, RK=>REAL_KIND
       USE MATRIX_OPERATIONS_MOD
 !

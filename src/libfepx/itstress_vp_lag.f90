@@ -12,7 +12,7 @@ MODULE ItMethodVpModule
   USE READ_INPUT_MOD
   USE microstructure_mod
   USE SURFACE_INFO_MOD
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE StiffnessVpModule
 

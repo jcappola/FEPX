@@ -12,7 +12,7 @@ file(GLOB libfepx_src
     boundary_conditions_mod.f90
     convergence_mod.f90
     crystal_type_mod.f90
-    DimsModule.f90
+    dimensions_mod.f90
     Dpeff.f90
     driver_iso_vp_mod.f90
     driver_uniaxial_control_mod.f90

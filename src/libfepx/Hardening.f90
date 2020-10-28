@@ -10,7 +10,7 @@ MODULE HardeningModule
   !
   USE LibF95, ONLY: RK => REAL_KIND, RK_ONE, RK_ZERO
   USE parallel_mod, ONLY: Quit => par_quit
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE READ_INPUT_MOD
   USE microstructure_mod
   USE MATRIX_OPERATIONS_MOD

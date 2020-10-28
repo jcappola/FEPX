@@ -42,7 +42,7 @@ MODULE StressSolveVpModule
   USE IntrinsicTypesModule, RK=>REAL_KIND
   USE READ_INPUT_MOD
   USE units_mod
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE microstructure_mod
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE MATRIX_OPERATIONS_MOD

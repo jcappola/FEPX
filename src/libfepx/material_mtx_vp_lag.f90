@@ -5,7 +5,7 @@
 MODULE MaterialMatrixVpModule
 
   USE parallel_mod
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE READ_INPUT_MOD
   use StressSolveVpModule
   USE KinematicsModule

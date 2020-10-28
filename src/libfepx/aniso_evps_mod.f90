@@ -10,7 +10,7 @@ MODULE ANISO_EVPS_MOD
 ! ANISO_EVPS: Compute the anisotropic elasto-viscoplastic solution.
 ! FIND_WP_HAT: Compute the plastic spin in the intermediate config, `WP_HAT'.
 !
-USE DIMSMODULE
+USE DIMENSIONS_MOD
 USE MATERIALMATRIXVPMODULE
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD

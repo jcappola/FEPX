@@ -6,7 +6,7 @@ MODULE PolycrystalResponseEvpsModule
 
   USE IntrinsicTypesModule, RK=>REAL_KIND
   USE units_mod
-  USE DimsModule
+  USE DIMENSIONS_MOD
 
   USE READ_INPUT_MOD
   USE microstructure_mod

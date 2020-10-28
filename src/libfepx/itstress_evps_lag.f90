@@ -8,7 +8,7 @@ MODULE ItMethodEvpsModule
   USE parallel_matrix_mod
   USE gather_scatter
   
-  USE DimsModule
+  USE DIMENSIONS_MOD
   USE units_mod
 
   USE READ_INPUT_MOD
