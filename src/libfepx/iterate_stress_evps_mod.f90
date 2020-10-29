@@ -2,8 +2,16 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE ItMethodEvpsModule
-
+MODULE ITERATE_STRESS_EVPS_MOD
+!
+! Module handling the iteration for a single time increment for the EVPS soln.
+!
+! Contains subroutines:
+! RECOVER_PRESSURE_EVPS: Compute pressure from velocity field
+!
+! Contains functions:
+! ITMETHOD_EVPS: Driver for the EVPS iteration required for a single time
+!   increment.
 !
 ! From libfepx:
 !
@@ -22,605 +30,753 @@ USE WRITE_OUTPUT_MOD
 !
 USE GATHER_SCATTER_MOD
 USE PARALLEL_MOD
-
-
-  IMPLICIT NONE
-
-  PRIVATE
-  PUBLIC :: itmethod_evps
-
+!
+IMPLICIT NONE
+!
+! Private
+!
+PRIVATE
+!
+! Public
+!
+PUBLIC :: ITMETHOD_EVPS
+!
 CONTAINS
-
-      INTEGER FUNCTION itmethod_evps(&
-  &       bcs, pforce, vel, elpress, evel,&
-  &       dtrace, ntrace,&
-  &       c0_angs, c_angs, sig_vec_n, sig_vec, crss_n,&
-  &       crss, rstar_n, rstar, keinv,&
-  &       e_elas_kk_bar, e_elas_kk, sig_kk, jiter_state,&
-  &       wts, epseff, &
-  &       dtime, incr, e_bar_vec,&
-  &       converged_solution, auto_time, iter)
-!
-!----------------------------------------------------------------------
-!     itmethod_evps is set:
-!     >0 (1)  if the solution converged
-!     <0 (-1) if the solution did not converged
-!             (either the maximum number of iterations was exceeded
-!              or the solution was badly diverging)
-!
-!     Modules.
-!
-!
-!     Arguments:
-!
-!     dtrace: gather/scatter trace for degrees of freedom
-!     ntrace: gather/scatter trace for nodal point arrays
-!
-      TYPE(trace) :: dtrace, ntrace
-
-      LOGICAL, INTENT(INOUT)  :: converged_solution
-      LOGICAL, INTENT(IN)     :: bcs(dof_sub1:dof_sup1)
-      REAL(RK), INTENT(INOUT) :: vel(dof_sub1:dof_sup1)
-
-      INTEGER, INTENT(IN) :: incr   ! current load increment
-
-      REAL(RK)  :: dtime
-      REAL(RK), INTENT(IN)  :: keinv(0:TVEC1, 1:numphases)
-
-      REAL(RK), INTENT(IN)    :: pforce(dof_sub1:dof_sup1)
-      REAL(RK)                :: evel(0:kdim1, el_sub1:el_sup1)
-
-      REAL(RK), INTENT(IN)    :: c0_angs(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)    :: c_angs (0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(INOUT) :: rstar  (0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)    :: rstar_n(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(INOUT) :: sig_vec_n(0:TVEC1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)  ! enters=0 at the first increment for all the grains
-                                                                                 ! exits =/0 only for grain=0
-      REAL(RK), INTENT(OUT)   :: sig_vec  (0:TVEC1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)
-
-      REAL(RK), INTENT(OUT)   :: e_bar_vec(0:TVEC1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)
-
-      REAL(RK), INTENT(IN)    :: crss_n(0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(OUT)   :: crss  (0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)
-
-      REAL(RK), INTENT(IN)    :: wts   (0:ngrain1, el_sub1:el_sup1)
-
-      REAL(RK), INTENT(OUT)   :: epseff (el_sub1:el_sup1, 0:nqpt1)
-      REAL(RK), INTENT(OUT)   :: elpress(el_sub1:el_sup1, 0:nqpt1)
-
-      REAL(RK), INTENT(OUT)   :: e_elas_kk_bar(el_sub1:el_sup1, 0:nqpt1)
-      REAL(RK), INTENT(OUT)   :: e_elas_kk    (el_sub1:el_sup1, 0:nqpt1)
-      REAL(RK), INTENT(OUT)   :: sig_kk (el_sub1:el_sup1, 0:nqpt1)
-
-      INTEGER, INTENT(OUT)    :: jiter_state(0:ngrain1, el_sub1:el_sup1)
-      INTEGER, INTENT(OUT)    :: iter
-
-!
-!     Locals:
-!
-      CHARACTER(LEN=128) :: message
-
-      INTEGER, PARAMETER :: NR_SLOPE_START = 2
-
-      INTEGER  :: itmethod, idiv, i, j, k, cg_iter_out, ier
-      INTEGER :: cg_max_iters, auto_time
-      REAL(RK) :: cg_tol
-      REAL(RK) :: nl_tol_strict, nl_tol_loose, nl_tol_min
-      !
-      REAL(RK) :: part_r_norm, r_norm, r_norm_o, r_norm_n
-      REAL(RK) :: part_rx_norm, rx_norm
-      REAL(RK) :: part_f_norm, f_norm
-      REAL(RK) :: part_delu_norm, delu_norm, delu_norm_o
-      REAL(RK) :: part_delux_norm, delux_norm
-      REAL(RK) :: part_u_norm, u_norm
-      REAL(RK) :: d_norm
-      !
-      REAL(RK) :: vel_o(dof_sub1:dof_sup1) ! velocity for previous iteration
-      REAL(RK) :: delta_vel(dof_sub1:dof_sup1)
-      REAL(RK) :: vel_SA(dof_sub1:dof_sup1)
-      !
-      REAL(RK) :: estiff(0:kdim1, 0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: etanstiff(0:kdim1, 0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: f_vec(0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: tcoords(dof_sub1:dof_sup1), ecoords(0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: force(dof_sub1:dof_sup1)
-      REAL(RK) :: eforce(0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: resid(dof_sub1:dof_sup1)
-      REAL(RK) :: eresid(0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: tc_angs(0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)
-      REAL(RK) :: trstar  (0:DIMS1, 0:DIMS1, 0:ngrain1, el_sub1:el_sup1, 0:nqpt1)
-      REAL(RK) :: gdiag(dof_sub1:dof_sup1)
-      !
-      INTEGER  :: m_el
-      !
-      REAL(RK) :: velcur(3, 10)
-      integer :: io, ielem
-      integer :: j1, j2, j3
-      !
-      ! local node number for mid-nodes correction
-      ! e1, e2: end node
-      ! m : mid-node
-      integer :: e1, e2, m
-      !
-      REAL(RK) :: e_ones(0:kdim1, el_sub1:el_sup1)
-      REAL(RK) :: g_ones(dof_sub1:dof_sup1)
-
-      LOGICAL :: NR, NR_attempt, NR_slow, iter_converged
-      INTEGER :: NR_iter
-      REAL(RK) :: NR_tol_switch_ref, NR_tol_conv
-      REAL(RK) :: NR_tol_switch, NR_conv, NR_conv_o
-!
-!----------------------------------------------------------------------
-!
-      NR_tol_switch_ref = cv_options % nr_tol_switch_ref
-      NR_tol_conv = cv_options % nr_tol_conv
-
-      cg_max_iters = cv_options % cg_max_iters
-      cg_tol = cv_options % cg_tol
-
-      nl_tol_strict = cv_options % nl_tol_strict
-      nl_tol_loose = cv_options % nl_tol_loose
-      nl_tol_min = cv_options % nl_tol_min
-
-      m_el = el_sup1 - el_sub1 + 1
-
-!      write(ounits(LOG_U), *) 'INCREMENT: ', incr
-!      write(ounits(LOG_U), *) 'NL-iter CG-iters       CG-resid     delU-norm        U-norm'
-!      write(ounits(LOG_U), *) '------- --------       --------     ---------        ------'
-
-
-      ! tsh, initialize ones arrays
-      e_ones = 1.0_RK
-      g_ones = 0.0_RK
-
-      ! scatter ones arrays and store multiplicity
-      call part_scatter(g_ones, e_ones, nodes, .false., dtrace)
-
-      ! initialization
-      r_norm_o = 0.0_RK
-      delu_norm_o = 0.0_RK
-      vel_o = vel
-      vel_SA = vel
-
-      ! set itmethod_evps=1 at the beginning
-      itmethod_evps = 1
-      cg_iter_out = 0
-      d_norm = 0.0_RK
-
-      iter_converged = .false.
-      NR = .false.
-      NR_attempt = .false.
-      NR_slow = .false.
-      NR_iter = 0
-      NR_tol_switch = NR_tol_switch_ref
-      NR_conv = 1.0_RK
-      NR_conv_o = 1.0_RK
-      idiv = 0
-
-! ----------- NL-iteration loop -----------------------------------------
-      nonlinear_iteration : DO iter = 1, cv_options % nl_max_iters
-! -----------------------------------------------------------------------
-
-!tsh
-! adjust mid-nodes
-! re-position the mid-node to the middle of the edge-nodes
-
-         if (myid .eq. 0) then
+    !
+    INTEGER FUNCTION ITMETHOD_EVPS(BCS, PFORCE, VEL, ELPRESS, EVEL, DTRACE, &
+        & NTRACE, C0_ANGS, C_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, &
+        & RSTAR, KEINV, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, JITER_STATE, WTS, &
+        & EPSEFF, DTIME, INCR, E_BAR_VEC, CONVERGED_SOLUTION, AUTO_TIME, ITER)
+    !
+    ! Driver for the EVPS iteration required for a single time increment.
+    !
+    ! ITMETHOD_EVPS is set:
+    !   >0 (1) IF the solution converged
+    !   <0 (-1) IF the solution did not converged (either the maximum number of
+    !       iterations was exceeded or the solution was badly diverging)
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! BCS:
+    ! PFORCE:
+    ! VEL:
+    ! ELPRESS:
+    ! EVEL:
+    ! DTRACE: Gather/scatter trace for degrees of freedom
+    ! NTRACE: Gather/scatter trace for nodal point arrays
+    ! C0_ANGS:
+    ! C_ANGS:
+    ! SIG_VEC_N: (enters=0 at the first increment for all the grains, exits =/0
+    !   only for grain=0)
+    ! SIG_VEC:
+    ! CRSS_N:
+    ! CRSS:
+    ! RSTAR_N:
+    ! RSTAR:
+    ! KEINV:
+    ! E_ELAS_KK_BAR:
+    ! E_ELAS_KK:
+    ! SIG_KK:
+    ! JITER_STATE:
+    ! WTS:
+    ! EPSEFF:
+    ! DTIME:
+    ! INCR: Current load increment
+    ! E_BAR_VEC:
+    ! CONVERGED_SOLUTION:
+    ! AUTO_TIME:
+    ! ITER:
+    !
+    LOGICAL, INTENT(IN) :: BCS(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(IN) :: PFORCE(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(INOUT) :: VEL(DOF_SUB1:DOF_SUP1)
+    REAL(RK), INTENT(OUT) :: ELPRESS(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
+    TYPE(TRACE) :: DTRACE
+    TYPE(TRACE) :: NTRACE
+    REAL(RK), INTENT(IN) :: C0_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: C_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: SIG_VEC_N(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(OUT) :: SIG_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
+    REAL(RK), INTENT(IN) :: CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
+    REAL(RK), INTENT(IN) :: RSTAR_N(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: RSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, &
+        & EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: KEINV(0:TVEC1, 1:NUMPHASES)
+    REAL(RK), INTENT(OUT) :: E_ELAS_KK_BAR(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(OUT) :: E_ELAS_KK(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK), INTENT(OUT) :: SIG_KK(EL_SUB1:EL_SUP1, 0:NQPT1)
+    INTEGER, INTENT(OUT) :: JITER_STATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: WTS(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(OUT) :: EPSEFF(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: DTIME
+    INTEGER, INTENT(IN) :: INCR
+    REAL(RK), INTENT(OUT) :: E_BAR_VEC(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, &
+        & 0:NQPT1)
+    LOGICAL, INTENT(INOUT) :: CONVERGED_SOLUTION
+    INTEGER :: AUTO_TIME
+    INTEGER, INTENT(OUT) :: ITER
+    !
+    ! Locals:
+    !
+    CHARACTER(LEN=128) :: MESSAGE
+    INTEGER, PARAMETER :: NR_SLOPE_START = 2
+    INTEGER :: ITMETHOD
+    INTEGER :: IDIV
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: CG_ITER_OUT
+    INTEGER :: IER
+    INTEGER :: CG_MAX_ITERS
+    REAL(RK) :: CG_TOL
+    REAL(RK) :: NL_TOL_STRICT
+    REAL(RK) :: NL_TOL_LOOSE
+    REAL(RK) :: NL_TOL_MIN
+    REAL(RK) :: PART_R_NORM
+    REAL(RK) :: R_NORM
+    REAL(RK) :: R_NORM_O
+    REAL(RK) :: R_NORM_N
+    REAL(RK) :: PART_RX_NORM
+    REAL(RK) :: RX_NORM
+    REAL(RK) :: PART_F_NORM
+    REAL(RK) :: F_NORM
+    REAL(RK) :: PART_DELU_NORM
+    REAL(RK) :: DELU_NORM
+    REAL(RK) :: DELU_NORM_O
+    REAL(RK) :: PART_DELUX_NORM
+    REAL(RK) :: DELUX_NORM
+    REAL(RK) :: PART_U_NORM
+    REAL(RK) :: U_NORM
+    REAL(RK) :: D_NORM
+    REAL(RK) :: VEL_O(DOF_SUB1:DOF_SUP1) ! Velocity for previous iteration
+    REAL(RK) :: DELTA_VEL(DOF_SUB1:DOF_SUP1)
+    REAL(RK) :: VEL_SA(DOF_SUB1:DOF_SUP1)
+    REAL(RK) :: ESTIFF(0:KDIM1, 0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ETANSTIFF(0:KDIM1, 0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: F_VEC(0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: TCOORDS(DOF_SUB1:DOF_SUP1), ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: FORCE(DOF_SUB1:DOF_SUP1)
+    REAL(RK) :: EFORCE(0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: RESID(DOF_SUB1:DOF_SUP1)
+    REAL(RK) :: ERESID(0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: TC_ANGS(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: TRSTAR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: GDIAG(DOF_SUB1:DOF_SUP1)
+    INTEGER  :: M_EL
+    REAL(RK) :: VELCUR(3, 10)
+    INTEGER :: IO
+    INTEGER :: IELEM
+    INTEGER :: J1
+    INTEGER :: J2
+    INTEGER :: J3
+    !
+    ! Local node number for mid-nodes correction
+    ! E1, E2: end node
+    ! M : mid-node
+    !
+    INTEGER :: E1
+    INTEGER :: E2
+    INTEGER :: M
+    REAL(RK) :: E_ONES(0:KDIM1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: G_ONES(DOF_SUB1:DOF_SUP1)
+    LOGICAL :: NR, NR_ATTEMPT
+    LOGICAL :: NR_SLOW
+    LOGICAL :: ITER_CONVERGED
+    INTEGER :: NR_ITER
+    REAL(RK) :: NR_TOL_SWITCH_REF
+    REAL(RK) :: NR_TOL_CONV
+    REAL(RK) :: NR_TOL_SWITCH
+    REAL(RK) :: NR_CONV
+    REAL(RK) :: NR_CONV_O
+    !
+    !---------------------------------------------------------------------------
+    !
+    NR_TOL_SWITCH_REF = CV_OPTIONS%NR_TOL_SWITCH_REF
+    NR_TOL_CONV = CV_OPTIONS%NR_TOL_CONV
+    !
+    CG_MAX_ITERS = CV_OPTIONS%CG_MAX_ITERS
+    CG_TOL = CV_OPTIONS%CG_TOL
+    !
+    NL_TOL_STRICT = CV_OPTIONS%NL_TOL_STRICT
+    NL_TOL_LOOSE = CV_OPTIONS%NL_TOL_LOOSE
+    NL_TOL_MIN = CV_OPTIONS%NL_TOL_MIN
+    !
+    M_EL = EL_SUP1 - EL_SUB1 + 1
+    !
+    ! Initialize ones arrays
+    !
+    E_ONES = 1.0_RK
+    G_ONES = 0.0_RK
+    !
+    ! Scatter ones arrays and store multiplicity
+    !
+    CALL PART_SCATTER(G_ONES, E_ONES, NODES, .FALSE., DTRACE)
+    !
+    ! Initialization
+    R_NORM_O = 0.0_RK
+    DELU_NORM_O = 0.0_RK
+    VEL_O = VEL
+    VEL_SA = VEL
+    !
+    ! Set ITMETHOD_EVPS=1 at the beginning
+    !
+    ITMETHOD_EVPS = 1
+    CG_ITER_OUT = 0
+    D_NORM = 0.0_RK
+    !
+    ITER_CONVERGED = .FALSE.
+    NR = .FALSE.
+    NR_ATTEMPT = .FALSE.
+    NR_SLOW = .FALSE.
+    NR_ITER = 0
+    NR_TOL_SWITCH = NR_TOL_SWITCH_REF
+    NR_CONV = 1.0_RK
+    NR_CONV_O = 1.0_RK
+    IDIV = 0
+    !
+    ! Non linear iteration
+    !
+    NONLINEAR_ITERATION : DO ITER = 1, CV_OPTIONS%NL_MAX_ITERS
+        !
+        IF (MYID .EQ. 0) THEN
             !
-            write(DFLT_U,'(A,I0)') 'Info   :     > ITMETHOD_EVPS: Iteration ', iter
+            WRITE(DFLT_U,'(A,I0)') 'Info   :     > ITMETHOD_EVPS: Iteration ', &
+                & ITER
             !
-         end if
-
-         call part_gather(ecoords, coords, nodes, dtrace)
-
-         m  = 1
-         e1 = 0
-         e2 = 2
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-!
-         m  = 3
-         e1 = 2
-         e2 = 4
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-!
-         m  = 5
-         e1 = 0
-         e2 = 4
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-!
-         m  = 6
-         e1 = 0
-         e2 = 9
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-!
-         m  = 7
-         e1 = 2
-         e2 = 9
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-!
-         m  = 8
-         e1 = 4
-         e2 = 9
-         ecoords(3*m,   el_sub1:el_sup1) =&
-  &     (ecoords(3*e1,   el_sub1:el_sup1) +&
-  &        ecoords(3*e2,   el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+1, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+1, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+1, el_sub1:el_sup1)) / 2.0_RK
-         ecoords(3*m+2, el_sub1:el_sup1) =&
-  &     (ecoords(3*e1+2, el_sub1:el_sup1) +&
-  &        ecoords(3*e2+2, el_sub1:el_sup1)) / 2.0_RK
-
-!        reset coordinates
-         coords = 0.0_RK
-!        scatter e_coordinates
-         call part_scatter(coords, ecoords, nodes, .false., dtrace)
-
-!        divide the coordinates by the multiplicity
-         coords = coords / g_ones
-
-         ! estimate the new coordinates based on the velocity vel
-         ! (vel is the guess for the velocity field)
-         tcoords = coords + dtime * vel
-
-         call part_gather(ecoords, tcoords, nodes, dtrace)
-         call part_gather(evel, vel, nodes, dtrace)
-
-         estiff = 0.0_RK
-         etanstiff = 0.0_RK
-         eforce = 0.0_RK
-         force  = pforce !pforce=0
-         tc_angs = spread(c_angs, 5, nqpt)
-         trstar = spread(rstar, 5, nqpt)
-
-         ! enter the subroutine that, through iterations at the constitutive level, computes:
-         ! - the state of each element:
-         !     e*_kk  : e_elas_kk
-         !     tau_kk : sig_kk
-         !     tau'   : sig_vec
-         !     R*     : rstar
-         !     g      : crss
-         ! - matrices [S]: estiff
-         ! - vectors [S]{h}: f_vec
-
-         ! e_bar_vec: OUT
-         ! sig_vec_n: INOUT (enters=0 at the first increment, only grain=0 is updated))
-
-         call element_stif_evps(&
-  &          estiff, etanstiff, f_vec, ecoords, evel,&
-  &          c0_angs, tc_angs, sig_vec_n, sig_vec, crss_n,&
-  &          crss, rstar_n, trstar,&
-  &          e_bar_vec, e_elas_kk_bar, e_elas_kk, sig_kk, jiter_state,&
-  &          keinv, wts, epseff,&
-  &          dtime, incr,&
-  &          converged_solution, auto_time, NR)
-
-         ! essentially renames f_vec eforce, consider removing
-         do i = 0, kdim1 ! 29
-            eforce(i, :) = eforce(i, :) + f_vec(i, :)
-         end do
-
-         ! compute elemental norms
-         eresid = 0.0_RK
-         resid = 0.0_RK
-         part_r_norm = 0.0_RK
-         r_norm = 0.0_RK
-         part_rx_norm = 0.0_RK
-         rx_norm = 0.0_RK
-         part_f_norm = 0.0_RK
-         f_norm = 0.0_RK
-
-         call gen_matrix_vector_mult(eresid, estiff, evel, 1, 2, 3, 4, ier)
-         do i = 0, kdim1 ! 29
-            eresid(i,:) = eforce(i,:) - eresid(i,:)
-         end do
-
-         ! scatter elemental residuals to all nodes
-         call part_scatter(resid, eresid, nodes, .false., dtrace)
-
-         ! calculate residual and force magnitudes
-         part_r_norm = sum(resid * resid)
-         call par_sum(part_r_norm, r_norm)
-         r_norm = dsqrt(r_norm)
-         if (iter .eq. 1) r_norm_n = r_norm
-
-         part_rx_norm = maxval(abs(resid))
-         call par_max(part_rx_norm, rx_norm)
-
-         call part_scatter(force, eforce, nodes, .false., dtrace)
-
-         part_f_norm = sum(force * force)
-         call par_sum(part_f_norm, f_norm)
-         f_norm = dsqrt(f_norm)
-
-         ! solve for new velocity field
-
-         ! zero the residual where velocities are specified
-         where (bcs) resid = 0.0_RK
-         delta_vel = 0.0_RK
-
-         if (NR) then ! use Newton-Raphson
-
-            if (myid .eq. 0) then
-               write(DFLT_U,'(A)', ADVANCE='NO') 'Info   :       . Solving NR iteration... '
-            endif
-
-            itmethod = 1
-            NR_iter = NR_iter+1
-
-            ! form the diagonal part of the stiffness matrix,
-            call assemble_diagonals(gdiag, etanstiff, kdim, dof_sub1, dof_sup1, el_sub1, el_sup1, dtrace, nodes)
-
-            ! compute the velocity field (vel) using the conjugate gradient method
-            cg_iter_out = cg_solver_ebe(delta_vel, d_norm, resid, gdiag,&
-                 & etanstiff, bcs, kdim, dof_sub1, dof_sup1, el_sub1, el_sup1,&
-                 & cg_max_iters, cg_tol, dtrace, nodes)
-
-         else ! use Successive Approximations
-
-            if (myid .eq. 0) then
-               write(DFLT_U,'(A)', ADVANCE='NO') 'Info   :       . Solving SA iteration... '
-            endif
-
-            itmethod = 0
-
-            call assemble_diagonals(gdiag, estiff, kdim, dof_sub1, dof_sup1, el_sub1, el_sup1, dtrace, nodes)
-
-            ! compute the velocity field (vel) using the conjugate gradient method
-            cg_iter_out = cg_solver_ebe(delta_vel, d_norm, resid, gdiag,&
-                 & estiff, bcs, kdim, dof_sub1, dof_sup1, el_sub1, el_sup1,&
-                 & cg_max_iters, cg_tol, dtrace, nodes)
-
-         endif
-
-         vel = vel_o + delta_vel
-
-         ! calculate velocity norm
-         part_delu_norm = 0.0_RK
-         delu_norm = 0.0_RK
-         part_delux_norm = 0.0_RK
-         delux_norm = 0.0_RK
-         part_u_norm = 0.0_RK
-         u_norm = 0.0_RK
-
-         part_delu_norm = sum(delta_vel * delta_vel)
-         call par_sum(part_delu_norm, delu_norm)
-         delu_norm = dsqrt(delu_norm)
-
-         part_delux_norm = maxval(abs(delta_vel))
-         call par_max(part_delux_norm, delux_norm)
-
-         part_u_norm = sum(vel_o * vel_o)
-         call par_sum(part_u_norm, u_norm)
-         u_norm = dsqrt(u_norm)
-
-         ! normalize  velocity norms
-         delu_norm = delu_norm/u_norm
-         delux_norm = delux_norm/u_norm
-
-         ! Newton-Raphson convergence parameters
-         if (NR_iter .ge. NR_SLOPE_START) then
-            NR_conv = log(delu_norm_o) - log(delu_norm)
-         endif
-
-         if (NR_iter .eq. NR_SLOPE_START) NR_conv_o = NR_conv
-
-         ! Successive Approximation convergence parameter
-         if (.not. NR) then
-            if (delu_norm .gt. delu_norm_o) then
-               idiv = idiv + 1
-            else
-               idiv = 0
-            end if
-         end if
-
-         ! output convergence parameters
-!         write(ounits(LOG_U), 100)  iter, cg_iter_out, d_norm, delu_norm, delux_norm
-!100      FORMAT(i8,1x,i8,1x,3d14.4)
-
-         if ((myid .eq. 0) .AND. PRINT_OPTIONS%PRINT_CONV) then
+        END IF
+        !
+        ! TSH: Adjust mid-nodes: re-position the mid-node to the middle of the
+        !   edge-nodes
+        !
+        CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
+        !
+        M = 1
+        E1 = 0
+        E2 = 2
+        ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        M = 3
+        E1 = 2
+        E2 = 4
+        ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        M = 5
+        E1 = 0
+        E2 = 4
+        ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        M = 6
+        E1 = 0
+        E2 = 9
+        ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        M = 7
+        E1 = 2
+        E2 = 9
+        ECOORDS(3*M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        M = 8
+        E1 = 4
+        E2 = 9
+        ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2,EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+        ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
+            & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+        !
+        ! Reset coordinates
+        !
+        COORDS = 0.0_RK
+        !
+        ! Scatter e_coordinates
+        !
+        CALL PART_SCATTER(COORDS, ECOORDS, NODES, .FALSE., DTRACE)
+        !
+        ! Divide the coordinates by the multiplicity
+        !
+        COORDS = COORDS / G_ONES
+        !
+        ! Estimate the new coordinates based on the velocity VEL
+        ! (VEL is the guess for the velocity field)
+        !
+        TCOORDS = COORDS + DTIME * VEL
+        !
+        CALL PART_GATHER(ECOORDS, TCOORDS, NODES, DTRACE)
+        CALL PART_GATHER(EVEL, VEL, NODES, DTRACE)
+        !
+        ESTIFF = 0.0_RK
+        ETANSTIFF = 0.0_RK
+        EFORCE = 0.0_RK
+        FORCE  = PFORCE !PFORCE=0
+        TC_ANGS = SPREAD(C_ANGS, 5, NQPT)
+        TRSTAR = SPREAD(RSTAR, 5, NQPT)
+        !
+        ! Dnter the subroutine that, through iterations at the constitutive
+        !   level , computes:
+        ! The state of each element:
+        ! e*_kk: E_ELAS_KK
+        ! tau_kk: SIG_KK
+        ! tau': SIG_VEC
+        ! R*: RSTAR
+        ! g: CRSS
+        ! Matrices [S]: ESTIFF
+        ! Vectors [S]{h}: F_VEC
+        !
+        ! E_BAR_VEC: OUT
+        ! SIG_VEC_N: INOUT (enters=0 at the first increment, only grain=0 is
+        !   updated)
+        !
+        CALL ELEMENT_STIF_EVPS( ESTIFF, ETANSTIFF, F_VEC, ECOORDS, EVEL, &
+            & C0_ANGS, TC_ANGS, SIG_VEC_N, SIG_VEC, CRSS_N, CRSS, RSTAR_N, &
+            & TRSTAR, E_BAR_VEC, E_ELAS_KK_BAR, E_ELAS_KK, SIG_KK, &
+            & JITER_STATE, KEINV, WTS, EPSEFF, DTIME, INCR, &
+            & CONVERGED_SOLUTION, AUTO_TIME, NR)
+        !
+        ! Essentially renames F_VEC EFORCE, consider removing
+        !
+        DO I = 0, KDIM1 ! 29
+            !
+            EFORCE(I, :) = EFORCE(I, :) + F_VEC(I, :)
+            !
+        END DO
+        !
+        ! Compute elemental norms
+        !
+        ERESID = 0.0_RK
+        RESID = 0.0_RK
+        PART_R_NORM = 0.0_RK
+        R_NORM = 0.0_RK
+        PART_RX_NORM = 0.0_RK
+        RX_NORM = 0.0_RK
+        PART_F_NORM = 0.0_RK
+        F_NORM = 0.0_RK
+        !
+        CALL GEN_MATRIX_VECTOR_MULT(ERESID, ESTIFF, EVEL, 1, 2, 3, 4, IER)
+        !
+        DO I = 0, KDIM1 ! 29
+            !
+            ERESID(I,:) = EFORCE(I,:) - ERESID(I,:)
+            !
+        END DO
+        !
+        ! Scatter elemental residuals to all nodes
+        !
+        CALL PART_SCATTER(RESID, ERESID, NODES, .FALSE., DTRACE)
+        !
+        ! Calculate residual and force magnitudes
+        !
+        PART_R_NORM = SUM(RESID * RESID)
+        !
+        CALL PAR_SUM(PART_R_NORM, R_NORM)
+        !
+        R_NORM = DSQRT(R_NORM)
+        !
+        IF (ITER .EQ. 1) THEN
+            !
+            R_NORM_N = R_NORM
+            !
+        END IF
+        !
+        PART_RX_NORM = MAXVAL(ABS(RESID))
+        !
+        CALL PAR_MAX(PART_RX_NORM, RX_NORM)
+        !
+        CALL PART_SCATTER(FORCE, EFORCE, NODES, .FALSE., DTRACE)
+        !
+        PART_F_NORM = SUM(FORCE * FORCE)
+        !
+        CALL PAR_SUM(PART_F_NORM, F_NORM)
+        !
+        F_NORM = DSQRT(F_NORM)
+        !
+        ! Solve for new velocity field
+        ! Zero the residual where velocities are specified
+        !
+        WHERE (BCS)
+            !
+            RESID = 0.0_RK
+            !
+        END WHERE
+        !
+        DELTA_VEL = 0.0_RK
+        !
+        IF (NR) THEN ! Use Newton-Raphson
+            !
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U,'(A)', ADVANCE='NO') 'Info   :       . Solving NR &
+                    &iteration... '
+                !
+            END IF
+            !
+            ITMETHOD = 1
+            NR_ITER = NR_ITER+1
+            !
+            ! Form the diagonal part of the stiffness matrix
+            !
+            CALL ASSEMBLE_DIAGONALS(GDIAG, ETANSTIFF, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, DTRACE, NODES)
+            !
+            ! Compute the velocity field (VEL) using the conjugate gradient
+            !   method
+            !
+            CG_ITER_OUT = CG_SOLVER_EBE(DELTA_VEL, D_NORM, RESID, GDIAG, &
+                & ETANSTIFF, BCS, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, &
+                & CG_MAX_ITERS, CG_TOL, DTRACE, NODES)
+            !
+        ELSE
+            !
+            ! Use Successive Approximations
+            !
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U,'(A)', ADVANCE='NO') 'Info   :       . Solving SA &
+                    &iteration... '
+                !
+            END IF
+            !
+            ITMETHOD = 0
+            !
+            CALL ASSEMBLE_DIAGONALS(GDIAG, ESTIFF, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, DTRACE, NODES)
+            !
+            ! Compute the velocity field (VEL) using the conjugate gradient
+            !   method
+            CG_ITER_OUT = CG_SOLVER_EBE(DELTA_VEL, D_NORM, RESID, GDIAG, &
+                & ESTIFF, BCS, KDIM, DOF_SUB1, DOF_SUP1, EL_SUB1, EL_SUP1, &
+                & CG_MAX_ITERS, CG_TOL, DTRACE, NODES)
+            !
+        END IF
+        !
+        VEL = VEL_O + DELTA_VEL
+        !
+        ! Calculate velocity norm
+        !
+        PART_DELU_NORM = 0.0_RK
+        DELU_NORM = 0.0_RK
+        PART_DELUX_NORM = 0.0_RK
+        DELUX_NORM = 0.0_RK
+        PART_U_NORM = 0.0_RK
+        U_NORM = 0.0_RK
+        !
+        PART_DELU_NORM = SUM(DELTA_VEL * DELTA_VEL)
+        CALL PAR_SUM(PART_DELU_NORM, DELU_NORM)
+        DELU_NORM = DSQRT(DELU_NORM)
+        !
+        PART_DELUX_NORM = MAXVAL(ABS(DELTA_VEL))
+        CALL PAR_MAX(PART_DELUX_NORM, DELUX_NORM)
+        !
+        PART_U_NORM = SUM(VEL_O * VEL_O)
+        CALL PAR_SUM(PART_U_NORM, U_NORM)
+        U_NORM = DSQRT(U_NORM)
+        !
+        ! Normalize velocity norms
+        !
+        DELU_NORM = DELU_NORM/U_NORM
+        DELUX_NORM = DELUX_NORM/U_NORM
+        !
+        ! Newton-Raphson convergence parameters
+        IF (NR_ITER .GE. NR_SLOPE_START) THEN
+            !
+            NR_CONV = LOG(DELU_NORM_O) - LOG(DELU_NORM)
+            !
+        END IF
+        !
+        IF (NR_ITER .EQ. NR_SLOPE_START) THEN
+            !
+            NR_CONV_O = NR_CONV
+            !
+        END IF
+        !
+        ! Successive Approximation convergence parameter
+        !
+        IF (.NOT. NR) THEN
+            !
+            IF (DELU_NORM .GT. DELU_NORM_O) THEN
+                !
+                IDIV = IDIV + 1
+                !
+            ELSE
+                !
+                IDIV = 0
+                !
+            END IF
+            !
+        END IF
+        !
+        ! Output convergence parameters
+        !
+        IF ((MYID .EQ. 0) .AND. PRINT_OPTIONS%PRINT_CONV) THEN
+            !
             CALL WRITE_CONV_FILE_DATA(INCR, ITER, ITMETHOD, R_NORM, RX_NORM, &
                 & F_NORM, DELU_NORM, DELUX_NORM, U_NORM, CG_ITER_OUT)
-         endif
-
-         if (myid .eq. 0) then
             !
-            write(DFLT_U,'(A,E10.4,A,I0,A)', ADVANCE='YES') 'R = ', delu_norm, &
-                & ' (', cg_iter_out, ' iters)'
+        END IF
+        !
+        IF (MYID .EQ. 0) THEN
             !
-         end if
-
-         ! check convergence of the velocity solution
-         !
-         ! cases 1-4:  convergence, strict or loose
-         ! cases 5-6:  switch back to SA due to problems with NR
-         ! case 7:  failure
-
-         ! case 1
-         if ((delu_norm < nl_tol_strict) .and. (iter .gt. 1)) then
-            ! solution converged
-            iter_converged = .TRUE.; EXIT
-
-         ! case 2
-         else if ((delu_norm*u_norm < nl_tol_min*maxdof) .and. (iter .gt. 1)) then
-            ! solution converged
-            if (myid .eq. 0) then
+            WRITE(DFLT_U,'(A,E10.4,A,I0,A)', ADVANCE='YES') 'R = ', DELU_NORM, &
+                & ' (', CG_ITER_OUT, ' iters)'
+            !
+        END IF
+        !
+        ! Check convergence of the velocity solution
+        ! Cases 1-4:  convergence, strict or loose
+        ! Cases 5-6:  switch back to SA due to problems with NR
+        ! Case 7:  failure
+        !
+        IF ((DELU_NORM < NL_TOL_STRICT) .AND. (ITER .GT. 1)) THEN
+            !
+            ! Case 1
+            ! Solution converged
+            !
+            ITER_CONVERGED = .TRUE.
+            !
+            EXIT
+            !
+        ELSE IF ((DELU_NORM * U_NORM < NL_TOL_MIN * MAXDOF) .AND. &
+            & (ITER .GT. 1)) THEN
+            !
+            ! Case 2
+            ! Solution converged
+            !
+            IF (MYID .EQ. 0) THEN
                 !
-                write(DFLT_U,'(A)') 'Info   :       . Change in velocity is below &
-                    &threshold value.'
+                WRITE(DFLT_U,'(A)') 'Info   :       . Change in velocity is &
+                    &below threshold value.'
                 !
-            end if
+            END IF
             !
-            iter_converged = .TRUE.; EXIT
-
-         ! case 3
-         else if ((NR_iter .gt. NR_SLOPE_START) .and. (NR_conv .lt. NR_tol_conv*NR_conv_o) &
-              & .and. (delu_norm < nl_tol_loose)) then
+            ITER_CONVERGED = .TRUE.
+            !
+            EXIT
+            !
+        ELSE IF ((NR_ITER .GT. NR_SLOPE_START) .AND. (NR_CONV .LT. &
+            & NR_TOL_CONV*NR_CONV_O) .AND. (DELU_NORM < NL_TOL_LOOSE)) THEN
+            !
+            ! Case 3
             ! Newton-Raphson slow to converge, but converged satisfactorily
-            if (myid .eq. 0) then
-                !
-                write(DFLT_U,'(A)') 'Info   :       . Newton-Raphson is slow to &
-                    &converge, but converged satisfactorily.'
-                !
-            end if
             !
-           iter_converged = .TRUE.; EXIT
-           
-         ! case 4
-         else if ((.not. NR) .and. (NR_attempt) .and. (delu_norm < nl_tol_loose)) then
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U,'(A)') 'Info   :       . Newton-Raphson is slow &
+                    &to converge, but converged satisfactorily.'
+                !
+            END IF
+            !
+            ITER_CONVERGED = .TRUE.
+            !
+            EXIT
+            !
+        ELSE IF ((.NOT. NR) .AND. (NR_ATTEMPT) .AND. &
+            & (DELU_NORM < NL_TOL_LOOSE)) THEN
+            !
+            ! Case 4
             ! SA slow to converge, but converged satisfactorily
-            if (myid .eq. 0) then
+            !
+            IF (MYID .EQ. 0) THEN
                 !
-                write(DFLT_U,'(A)') 'Info   :       . Successive Approximations is &
-                    &slow to converge, but converged satisfactorily.'
+                WRITE(DFLT_U,'(A)') 'Info   :       . Successive Approximations&
+                    & is slow to converge, but converged satisfactorily.'
                 !
-            end if
-            iter_converged = .TRUE.; EXIT
-         
-         ! case 5
-         else if (NR .and. (r_norm .gt. 1.1*r_norm_n)) then
+            END IF
+            !
+            ITER_CONVERGED = .TRUE.
+            !
+            EXIT
+            !
+        ELSE IF (NR .AND. (R_NORM .GT. 1.1 * R_NORM_N)) THEN
+            !
+            ! Case 5
             ! Newton-Raphson solution diverging
-            if (myid .eq. 0) then
-               write(DFLT_U, '(A)') 'Warning:     > Newton-Raphson solution diverging.'
-            end if
-            ! revert to previous SA solution and use SA
-            NR = .false.
-            vel = vel_SA
-            ! enforce stricter switch-over tolerance between methods
-            NR_tol_switch = NR_tol_switch/10.0
-            ! set flag that NR had been attempted
-            NR_attempt = .true.
-            ! reset number of NR iterations
-            NR_iter = 0
-
-         ! case 6
-         else if ((NR_iter .gt. NR_SLOPE_START) .and. (NR_conv .lt. NR_tol_conv*NR_conv_o)) then
+            !
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U, '(A)') 'Warning:     > Newton-Raphson solution &
+                    &diverging.'
+                !
+            END IF
+            !
+            ! Revert to previous SA solution and use SA
+            !
+            NR = .FALSE.
+            VEL = VEL_SA
+            !
+            ! Enforce stricter switch-over tolerance between methods
+            !
+            NR_TOL_SWITCH = NR_TOL_SWITCH / 10.0
+            !
+            ! Set flag that NR had been attempted
+            !
+            NR_ATTEMPT = .TRUE.
+            !
+            ! Reset number of NR iterations
+            !
+            NR_ITER = 0
+            !
+        ELSE IF ((NR_ITER .GT. NR_SLOPE_START) .AND. (NR_CONV .LT. &
+            & NR_TOL_CONV*NR_CONV_O)) THEN
+            !
+            ! Case 6
             ! Newton-Raphson converging slowly
-            if (myid .eq. 0) then
-               write(DFLT_U, '(A)') 'Warning:     > Newton-Raphson converging slowly.'
-            end if
-            ! switch to SA
-            NR = .false.
-            ! set flag that NR had been attempted
-            NR_attempt = .true.
-            NR_slow = .true.
-            ! reset number of NR iterations
-            NR_iter = 0
-
-         ! case 7
-         else if (idiv .ge. 5) then
+            !
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U, '(A)') 'Warning:     > Newton-Raphson converging &
+                    &slowly.'
+                !
+            END IF
+            !
+            ! Switch to SA
+            !
+            NR = .FALSE.
+            !
+            ! Set flag that NR had been attempted
+            !
+            NR_ATTEMPT = .TRUE.
+            NR_SLOW = .TRUE.
+            !
+            ! Reset number of NR iterations
+            !
+            NR_ITER = 0
+            !
+        ELSE IF (IDIV .ge. 5) THEN
+            !
+            ! Case 7
             ! Successive approximations diverging
-            if (myid .eq. 0) then
-               write(DFLT_U, '(A)') 'Warning:     > Iterations are diverging.'
-            end if
-            ! failure to converge
-            itmethod_evps = -1
+            !
+            IF (MYID .EQ. 0) THEN
+                !
+                WRITE(DFLT_U, '(A)') 'Warning:     > Iterations are diverging.'
+                !
+            END IF
+            !
+            ! Failure to converge
+            !
+            ITMETHOD_EVPS = -1
+            !
             RETURN
-         end if
-
-         ! switch from SA to NR
-         ! removed requirement for iter .gt. 1
-         if ((delu_norm .lt. NR_tol_switch) &
-              & .and. (.not. NR_slow) .and. (.not. NR)) then
-            NR = .true.
-            idiv = 0
-            ! save velocity field
-            vel_SA = vel
-         endif
-
-         vel_o = vel
-         r_norm_o = r_norm
-         delu_norm_o = delu_norm
-
-      ENDDO nonlinear_iteration
-      ! ----------- NL-iteration loop -----------------------------------------
-      IF (iter_converged) THEN
-            if (myid .eq. 0) then
-               write(DFLT_U, '(A,I0,A)') 'Info   :     > Converged in ', iter, ' iterations'
-            end if
-        !WRITE(message, *) '** INC: ', incr, ' ITSTRESS converged in ', iter, ' iterations.'
-        !CALL par_message(DFLT_U, message)
-
-        ! compute pressure
-        CALL recover_pressure_evps(elpress, e_elas_kk)
-
-      ELSE
-        ! Maximum number of iterations exceeded.
-!        WRITE(ounits(LOG_U), 120) iter, d_norm
-!120     FORMAT(' No convergence for initial guess',/,' iter =', i4, ' d_norm =', g10.3)
-        ! failure to converge
-        itmethod_evps = -1
-      END IF
-
-      END FUNCTION itmethod_evps
-!
-!
-!**********************************************************************
-!
-      SUBROUTINE recover_pressure_evps(elpress, e_elas_kk)
-!
-!----------------------------------------------------------------------
-!
-!     Arguments.
-!
-      REAL(RK), INTENT(IN)  :: e_elas_kk(el_sub1:el_sup1)
-      REAL(RK), INTENT(OUT) :: elpress(el_sub1:el_sup1)
-!
-!     Locals:
-!
-      INTEGER :: iphase
-      INTEGER :: my_phase(el_sub1:el_sup1)
-!
-!----------------------------------------------------------------------
-!
-      my_phase(:) = phase(el_sub1:el_sup1)
-
-      do iphase = 1,numphases
-         where (my_phase .EQ. iphase)
-            elpress = - crystal_parm(8,iphase) * e_elas_kk
-         end where
-      enddo
-
-    END SUBROUTINE recover_pressure_evps
-
-END MODULE ItMethodEvpsModule
+            !
+        END IF
+        !
+        ! Switch from SA to NR
+        ! Removed requirement for iter .GT. 1
+        IF ((DELU_NORM .LT. NR_TOL_SWITCH) .AND. (.NOT. NR_SLOW) .AND. &
+            & (.NOT. NR)) THEN
+            !
+            NR = .TRUE.
+            IDIV = 0
+            !
+            ! Save velocity field
+            !
+            VEL_SA = VEL
+            !
+        END IF
+        !
+        VEL_O = VEL
+        R_NORM_O = R_NORM
+        DELU_NORM_O = DELU_NORM
+        !
+    ENDDO NONLINEAR_ITERATION
+    !
+    IF (ITER_CONVERGED) THEN
+        !
+        IF (MYID .EQ. 0) THEN
+            !
+            WRITE(DFLT_U, '(A,I0,A)') 'Info   :     > Converged in ', iter,&
+                & ' iterations'
+            !
+        END IF
+        !
+        CALL RECOVER_PRESSURE_EVPS(ELPRESS, E_ELAS_KK)
+        !
+    ELSE
+        !
+        ! Maximum number of iterations exceeded. Failure to converge.
+        !
+        ITMETHOD_EVPS = -1
+        !
+    END IF
+    !
+    END FUNCTION ITMETHOD_EVPS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE RECOVER_PRESSURE_EVPS(ELPRESS, E_ELAS_KK)
+    !
+    ! Compute pressure from velocity field
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! ELPRESS:
+    ! E_ELAS_KK:
+    !
+    REAL(RK), INTENT(OUT) :: ELPRESS(EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: E_ELAS_KK(EL_SUB1:EL_SUP1)
+    !
+    ! Locals:
+    !
+    INTEGER :: IPHASE
+    INTEGER :: MY_PHASE(EL_SUB1:EL_SUP1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        WHERE (MY_PHASE .EQ. IPHASE)
+            !
+            ELPRESS = -CRYSTAL_PARM(8, IPHASE) * E_ELAS_KK
+            !
+        END WHERE
+        !
+    END DO
+    !
+    END SUBROUTINE RECOVER_PRESSURE_EVPS
+    !
+END MODULE ITERATE_STRESS_EVPS_MOD

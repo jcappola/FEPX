@@ -4,7 +4,7 @@
 !
 MODULE ITERATE_STRESS_VP_MOD
 !
-! Module handling the ITERation for a single time increment for the viscoplastic
+! Module handling the iteration for a single time increment for the viscoplastic
 !   solution.
 !
 ! Contains subroutines:
