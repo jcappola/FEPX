@@ -17,7 +17,7 @@ MODULE StiffnessEvpsModule
     use microstructure_mod
     USE MATRIX_OPERATIONS_MOD
     USE MATERIAL_MATRIX_EVPS_MOD
-    use StiffnessVpModule
+    USE STIFFNESS_VP_MOD
 
     IMPLICIT NONE
 
