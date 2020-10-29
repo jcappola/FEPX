@@ -40,7 +40,7 @@ file(GLOB libfepx_src
     stiffness_vp_lag.f90
     StiffnessEvpsModule.f90
     stress_solve_evps_mod.f90
-    stress_solve_vp_lag.f90
+    stress_solve_vp_mod.f90
     surface_info_mod.f90
     surface_mod.f90
     tensor_3d_mod.f90
