@@ -23,6 +23,8 @@ MODULE SHAPE_2D_MOD
 ! SF2D09: 9-node quadrilateral shape function values
 ! SF2DG09: 9-node quadrilateral shape function gradients
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
 !
 IMPLICIT NONE

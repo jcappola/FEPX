@@ -12,6 +12,8 @@ MODULE CONVERGENCE_MOD
 ! Contains functions:
 ! CONVERGENCEKEYWORDINPUT: Keyword input for module
 !
+! From libf95:
+!
 USE LIBF95, RK=>REAL_KIND
 !
 IMPLICIT NONE

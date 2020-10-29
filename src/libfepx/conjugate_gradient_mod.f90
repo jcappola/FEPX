@@ -13,11 +13,18 @@ MODULE CONJUGATE_GRADIENT_MOD
 ! Contains functions:
 ! CG_SOLVER_EBE: Driver for element by element conjugate gradient solver
 !
-USE GATHER_SCATTER
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
-USE PARALLEL_MOD
+!
+! From libfepx:
 !
 USE PARALLEL_MATRIX_MOD
+!
+! From libparallel:
+!
+USE GATHER_SCATTER
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !

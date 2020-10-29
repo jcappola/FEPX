@@ -24,7 +24,12 @@ MODULE SHAPE_3D_MOD
 ! B8_SHAPE_HPAR: Shape functions.
 ! B8_DERIV_HPAR: Shape function derivatives.
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
+!
 USE READ_INPUT_MOD, ONLY: NNPE, EL_SUB1, EL_SUP1, KDIM1
 !
 IMPLICIT NONE

@@ -9,8 +9,11 @@ MODULE STIFFNESS_EVPS_MOD
 ! Contains subroutines:
 ! ELEMENT_STIF_EVPS: Construct elemental stiffness matrix for EVPS problem
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
-USE PARALLEL_MOD
+!
+! From libfepx:
 !
 USE DIMENSIONS_MOD
 USE MATERIAL_MATRIX_EVPS_MOD
@@ -22,6 +25,10 @@ USE READ_INPUT_MOD
 USE SHAPE_3D_MOD
 USE STIFFNESS_VP_MOD
 USE UNITS_MOD
+!
+! From libparallel
+!
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !

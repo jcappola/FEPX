@@ -16,6 +16,8 @@ MODULE QUADRATURE_MOD
 ! Contains subroutines:
 ! INITIALIZE: Sets up quadrature rules
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
 !
 IMPLICIT NONE

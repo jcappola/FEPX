@@ -10,13 +10,20 @@ MODULE MATERIAL_MATRIX_VP_MOD
 ! MATERIAL_MATRIX_VP: Material matrix for the viscoplastic solution
 ! ISOTROPIC: Return viscosity for the isotropic viscoplastic solution
 !
-USE PARALLEL_MOD
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
 !
+! From libfepx:
+!
 USE DIMENSIONS_MOD
+USE KINEMATICS_MOD
 USE READ_INPUT_MOD
 USE STRESS_SOLVE_VP_MOD
-USE KINEMATICS_MOD
+!
+! From libparallel:
+!
+USE PARALLEL_MOD
 !
 IMPLICIT  NONE
 !

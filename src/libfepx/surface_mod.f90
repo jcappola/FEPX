@@ -9,9 +9,13 @@ MODULE SURFACE_MOD
 ! Contains function:
 ! ALLOCATE_SURFACE_SECTION: Allocate space to enough elements
 !
+! From libf95:
+!
+USE INTRINSIC_TYPES_MOD, ONLY:RK=>REAL_KIND
+!
+! From libparallel
 !
 USE GATHER_SCATTER
-USE INTRINSIC_TYPES_MOD, ONLY:RK=>REAL_KIND
 !
 IMPLICIT NONE
 !

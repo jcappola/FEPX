@@ -10,9 +10,14 @@ MODULE UNITS_MOD
 ! OPEN_LOG_FILES: Opens log files.
 ! OPEN_OUTPUT_FILES: Opens output files.
 !
-USE PARALLEL_MOD
+! From libfepx:
+!
 USE READ_INPUT_MOD
 USE SURFACE_INFO_MOD, ONLY: FASET
+!
+! From libparallel:
+!
+USE PARALLEL_MOD
 !
 IMPLICIT NONE
 !

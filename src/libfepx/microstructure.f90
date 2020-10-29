@@ -8,17 +8,33 @@ MODULE MICROSTRUCTURE_MOD
 !   assignment of orientations to elements, initialization of hardening values,
 !
 ! Contains subroutines:
+! ASSIGN_ANGLES_PHASES: Assign orientations to the elements and compute rotation
+!   matrices
+! SET_TMIN: Set minimum RSS to prevent overflow
+! ALLOCATE_GAMMADOT: Allocate memory for shear rate
+! ALLOCATE_GACCUMSHEAR: Allocate memory for accumulated shear
+! ALLOCATE_CRSS_N: Allocate memory for CRSS of previous step
+! CRSS_N_INITIALIZE: Initialize the crystal slip system hardness
+! SET_FCC_BLOCK_MATRICES: Define hardening interaction matrix for FCC crystal
+! SET_HCP_BLOCK_MATRICES: Define hardening interaction matrix for HCP crystal
+! SET_BCC_BLOCK_MATRICES: Define hardening interaction matrix for BCC crystal
+! READ_MATERIAL_PARAMETERS:  Routine to read in all crystal parameter data from
+!   configuration file.
+!
+! From libf95:
 !
 USE LIBF95, ONLY: RK => REAL_KIND, STANDARD_OUTPUT, RK_ONE, PI => RK_PI, &
     & GETLINE, GETWORD
 !
+! From libfepx:
+!
 USE CRYSTAL_TYPE_MOD
 USE DIMENSIONS_MOD
-USE READ_INPUT_MOD
+USE MATRIX_OPERATIONS_MOD
 USE ORIENTATION_CONVERSION_MOD
 USE PARALLEL_MOD
+USE READ_INPUT_MOD
 USE UNITS_MOD
-USE MATRIX_OPERATIONS_MOD
 !
 IMPLICIT NONE
 !
@@ -453,8 +469,16 @@ CONTAINS
     !
     SUBROUTINE ALLOCATE_CRSS_N(CRSS_N, NGRAIN1)
     !
-    INTEGER, INTENT(IN) :: NGRAIN1
+    ! Allocate memory for CRSS of previous step
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments
+    ! CRSS_N: CRSS of previous step
+    ! NGRAIN1: Number of grains per element (minus 1, obsolete, always 0)
+    !
     REAL(RK), INTENT(INOUT), ALLOCATABLE :: CRSS_N(:,:,:)
+    INTEGER, INTENT(IN) :: NGRAIN1
     !
     ALLOCATE(CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1))
     !

@@ -11,7 +11,11 @@ MODULE KINEMATICS_MOD
 ! EFF_DEF: Compute effective deformation rate
 ! DEFRATE: Compute deformation rate tensor
 !
+! From libf95:
+!
 USE LIBF95, RK=>REAL_KIND
+!
+! From libfepx:
 !
 USE DIMENSIONS_MOD
 USE READ_INPUT_MOD

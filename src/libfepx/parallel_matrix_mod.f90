@@ -11,7 +11,12 @@ MODULE PARALLEL_MATRIX_MOD
 ! GEN_MATRIX_VECTOR_MULT: Matrix times vector
 ! GEN_MATRIX_MULT: Matrix times matrix
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libparallel:
+!
 USE GATHER_SCATTER
 !
 IMPLICIT NONE

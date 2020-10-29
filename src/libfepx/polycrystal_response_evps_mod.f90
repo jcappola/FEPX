@@ -14,7 +14,11 @@ MODULE POLYCRYSTAL_RESPONSE_EVPS_MOD
 ! SOLVE_STATE_DEV_EVPS_QP: Solves for the deviatoric state at quad points
 ! SOLVE_STATE_VOL_EVPS_QP: Solves for the volumetric state at quad points
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
 !
 USE CONVERGENCE_MOD, ONLY: CV_OPTIONS
 USE DIMENSIONS_MOD

@@ -10,7 +10,11 @@ MODULE STIFFNESS_VP_MOD
 ! ELEMENT_STIF_VP: Form elemental stiffness matrix for viscoplastic problem
 ! ADD_TO_STIFFNESS: Add component to stiffness matrix
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
 !
 USE CONVERGENCE_MOD, ONLY: CV_OPTIONS
 USE DIMENSIONS_MOD

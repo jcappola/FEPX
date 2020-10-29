@@ -11,9 +11,14 @@ MODULE ELEMENTAL_VARIABLES_UTILS_MOD
 ! CALC_TOTAL_WORK: Computes elemental total work for a time step.
 ! CALC_PLASTIC_WORK: Computes elemental plastic work for a time step.
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
-USE MATRIX_OPERATIONS_MOD
+!
+! From libfepx:
+!
 USE DIMENSIONS_MOD
+USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD
 !

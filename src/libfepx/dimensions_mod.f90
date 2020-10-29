@@ -9,6 +9,8 @@ MODULE DIMENSIONS_MOD
 ! Contains subroutines:
 ! SET_MAXSLIP: Sets the maximum number of slip systems and SCYS vertices
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND, IK=>INTEGER_KIND, &
     & LK=>LOGICAL_KIND
 !

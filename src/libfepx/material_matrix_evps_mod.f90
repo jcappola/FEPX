@@ -9,7 +9,11 @@ MODULE MATERIAL_MATRIX_EVPS_MOD
 ! Contains subroutines:
 ! MATERIAL_MATRIX_EVPS: Material matrix for the EVPS solution
 !
+! From libf95:
+!
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
+!
+! From libfepx:
 !
 USE ANISO_EVPS_MOD
 USE DIMENSIONS_MOD
