@@ -10,7 +10,7 @@ MODULE BOUNDARY_CONDITIONS_MOD
 ! CALC_BCS: Calculate grip, symmetry, or initial triaxial boundary conditions.
 ! READ_BCS: Read boundary conditions from file.
 !
-USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
+USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
 !
 USE READ_INPUT_MOD, ONLY: COORDS, DOF_SUB1, DOF_SUP1, NP_SUB1, NP_SUP1,&
     & BCS_OPTIONS, OPTIONS

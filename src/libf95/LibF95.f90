@@ -2,23 +2,18 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE LibF95
-  !
-  !  Module for all Libf95 public entities
-  !
-  !--------------Other Modules-------------------------------------------
-  !
-  USE IntrinsicTypesModule
-  USE ConstantsModule
-  USE StringsModule
-  USE FilesModule 
-  USE TimerModule 
-  USE CommandModule
-  USE OptimModule
-  !
-  !--------------Public Data---------------------------------------------
-  !
-  PUBLIC
-  !
-END MODULE LibF95
-
+MODULE LIBF95
+!
+!  Module for all Libf95 public entities
+!
+USE COMMAND_MOD
+USE CONSTANTS_MOD
+USE FILES_MOD
+USE INTRINSIC_TYPES_MOD
+USE OPTIMIZATION_MOD
+USE STRINGS_MOD
+USE TIMER_MOD
+!
+PUBLIC
+!
+END MODULE LIBF95

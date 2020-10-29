@@ -22,7 +22,7 @@ file(GLOB libfepx_src
     elemental_variables_utils_mod.f90
     fiber_average_mod.f90
     hardening_mod.f90
-    itstress_evps_lag.f90
+    iterate_stress_evps_mod.f90
     iterate_stress_vp_mod.f90
     kinematics_mod.f90
     material_matrix_evps_mod.f90

@@ -10,7 +10,7 @@ MODULE gather_scatter
   !  Modified by Don Boyce 9/2000---see end of file.
   !
   !
-  USE IntrinsicTypesModule, RK=>REAL_KIND
+  USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
   USE parallel_mod,  ONLY: par_quit, myid, myidstr
   !
   IMPLICIT NONE
