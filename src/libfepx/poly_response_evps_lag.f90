@@ -12,7 +12,7 @@ MODULE PolycrystalResponseEvpsModule
   USE microstructure_mod
   USE MATRIX_OPERATIONS_MOD
   USE rstarn_solve_lag_mod
-  USE StressSolveVpModule
+  USE STRESS_SOLVE_VP_MOD
   USE STRESS_SOLVE_EVPS_MOD, ONLY: STRESS_SOLVE_EVPS
   USE CONVERGENCE_MOD, ONLY: cv_options
 

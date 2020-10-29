@@ -2,1083 +2,1309 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE StressSolveVpModule
-
-  !     Routines for solving visco-plastic crystal stress equations.
-  !
-  !     stress_solve_vp: Driver routine which takes care of scaling and 
-  !     *              : initial guesses.
-
-  !     scale_down_defr: Rescale the deformation rate to unit size.
-
-  !     compute_work: Compute virtual plastic work for array of deformation rates
-  !     *           : applied to vertex stresses.
-
-  !     find_vertex: Select the vertex which maximizes the plastic work.
-
-  !     vertex_stress: Set initial guess (vertex stress) for nonlinear solver.
-
-  !     scale_stress: Rescale stress initial guess according to hardness.
-
-  !     ss_project: Compute inner product of array of tensors with a fixed tensor.
-
-  !     solve_newton_vp: Nonlinear solution of viscoplastic crystal stress equations.
-
-  !     get_res: Compute residual for nonlinear VP crystal stress equation.
-
-  !     form_crystif: Form single crystal stiffness matrix.
-
-  !     power_law: Power law for VP single crystal.
-
-  !     compliance: Form crystal compliance matrices.
-
-  !     solvit: Solve an array of symmetric positive definite 5x5 systems.
-
-  !     check_diagonals: Determine where diagonal elements are small.
-
-  !     scale_up_sigm: Rescale the stress after solution is found.
-
-  USE parallel_mod
-  USE IntrinsicTypesModule, RK=>REAL_KIND
-  USE READ_INPUT_MOD
-  USE units_mod
-  USE DIMENSIONS_MOD
-  USE microstructure_mod
-  USE CONVERGENCE_MOD, ONLY: cv_options
-  USE MATRIX_OPERATIONS_MOD
-
-  IMPLICIT  NONE
-
-  PRIVATE
-  PUBLIC :: stress_solve_vp, ss_project, power_law, compliance, solvit, &
-       &    check_diagonals
-
+MODULE STRESS_SOLVE_VP_MOD
+!
+! Routines for solving viscoplastic crystal stress equations
+!
+! Contains subroutines:
+! STRESS_SOLVE_VP: Routine which takes care of scaling and initial guesses
+! SCALE_DOWN_DEFR: Rescale the deformation rate to unit size
+! COMPUTE_WORK: Compute virtual plastic work for array of deformation rates
+!   applied to vertex stresses
+! FIND_VERTEX: Select the vertex which maximizes the plastic work
+! VERTEX_STRESS: Set initial guess (vertex stress) for nonlinear solver
+! SCALE_STRESS: Rescale stress initial guess according to hardness
+! SS_PROJECT: Compute inner product of array of tensors with a fixed tensor
+! SOLVE_NEWTON_VP: Nonlinear solution of viscoplastic crystal stress equations
+! GET_RES: Compute residual for nonlinear VP crystal stress equation
+! FORM_CRYSTIF: Form single crystal stiffness matrix
+! POWER_LAW: Power law for VP single crystal
+! COMPLIANCE: Form crystal compliance matrices
+! SOLVIT: Solve an array of symmetric positive definite 5X5 systems
+! CHECK_DIAGONALS: Determine where diagonal elements are small
+! SCALE_UP_SIGM: Rescale the stress after solution is found
+!
+USE PARALLEL_MOD
+USE INTRINSICTYPESMODULE, ONLY: RK=>REAL_KIND
+!
+USE READ_INPUT_MOD
+USE UNITS_MOD
+USE DIMENSIONS_MOD
+USE MICROSTRUCTURE_MOD
+USE CONVERGENCE_MOD, ONLY: CV_OPTIONS
+USE MATRIX_OPERATIONS_MOD
+!
+IMPLICIT  NONE
+!
+! Private
+!
+PRIVATE
+!
+! Public
+!
+PUBLIC :: STRESS_SOLVE_VP
+PUBLIC :: SS_PROJECT
+PUBLIC :: POWER_LAW
+PUBLIC :: COMPLIANCE
+PUBLIC :: SOLVIT
+PUBLIC :: CHECK_DIAGONALS
+!
 CONTAINS
-!
-!**********************************************************************
-!
-      SUBROUTINE stress_solve_vp(sig, d_vec_lat, crss, epseff, vp_log)
-!
-!     Driver routine which takes care of scaling and initial guesses.
-!
-!----------------------------------------------------------------------
-!
-      REAL(RK), INTENT(OUT)   :: sig(0:TVEC1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(INOUT) :: d_vec_lat(0:TVEC1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)    :: crss  (0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK), INTENT(IN)    :: epseff(0:ngrain1, el_sub1:el_sup1)
-      LOGICAL,  INTENT(IN)    :: vp_log
-!
-!     Locals:
-!
-      LOGICAL  :: converged(0:ngrain1, el_sub1:el_sup1)
-!
-      INTEGER  :: i_edge, ier, m_el, ntrials
-      INTEGER  :: vertex(0:ngrain1, el_sub1:el_sup1)
-!
-      REAL(RK) :: direction(0:ngrain1, el_sub1:el_sup1)
-      REAL(RK) :: plwork(0:MAX_VERT1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK) :: sig_t(0:TVEC1, 0:ngrain1, el_sub1:el_sup1)
-      REAL(RK) :: crss_avg  (0:ngrain1, el_sub1:el_sup1)
-!
-!----------------------------------------------------------------------
-!
-!
-      m_el = el_sup1 - el_sub1 + 1
-      crss_avg = 0.0_RK
-
-      call scale_down_defr(d_vec_lat, epseff, ngrain, m_el)
-      call compute_work(plwork, d_vec_lat, ngrain, m_el)
-      call compute_avg_crss(crss,crss_avg,m_el)
-
-      converged = .false.
-
-!
-!     This loop used to be from 1 to n_edge, in order to try all vertices
-!     as initial guesses.  However, this can be very time-consuming and
-!     doesn't usually help.
-!
-      ntrials = 4
-
-      do i_edge = 1, ntrials
-         
-         call find_vertex(vertex, direction, plwork,  ngrain, m_el)
-                  
-         call vertex_stress(sig_t, vertex, direction, ngrain, m_el)
- 
-         call scale_stress(sig_t, crss_avg, ngrain, m_el)
-
-         where(.not. converged)
-            sig(0, :, :) = sig_t(0, :, :)
-            sig(1, :, :) = sig_t(1, :, :)
-            sig(2, :, :) = sig_t(2, :, :)
-            sig(3, :, :) = sig_t(3, :, :)
-            sig(4, :, :) = sig_t(4, :, :)
-         end where
-
-         call solve_newton_vp(sig, d_vec_lat, crss_avg,&
-  &           ier, cv_options % sx_tol, converged,&
-  &           ngrain, m_el, vp_log)
-
-         if (ier .eq. 0) GO TO 50
-
-      enddo
-      
-      if ((myid .eq. 0) .and. vp_log) then
-            WRITE(DFLT_U, '(A)') 'Warning:       . STRESS_SOLVE_VP: '
-            WRITE(DFLT_U, '(A)') 'Warning:       . ',count(.not. converged),'&
-                & elements did not converge'
-            WRITE(DFLT_U, '(A)') 'Warning:       . after ', ntrials,' trials.'
-      endif
-
-      where(.not. converged) 
-         sig(0, :, :) = sig_t(0, :, :)
-         sig(1, :, :) = sig_t(1, :, :)
-         sig(2, :, :) = sig_t(2, :, :)
-         sig(3, :, :) = sig_t(3, :, :)
-         sig(4, :, :) = sig_t(4, :, :)
-      endwhere
-
-
-50    CONTINUE
-
-      call scale_up_sigm(sig, epseff, ngrain, m_el)
-
-      END SUBROUTINE stress_solve_vp
-
-!**********************************************************************
-!
-      SUBROUTINE scale_down_defr(d_vec, epseff, n, m)
-!
-!     Rescale the deformation rate to unit size.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments  :
-!
-!     d_vec: array of deformation rates as 5-vectors (input/output)
-!     epseff: effective deformation of these tensors (input)
-!     n: number of grains
-!     m: number of elements
-!  
-      INTEGER, INTENT(IN)     :: n, m
-      REAL(RK), INTENT(INOUT) :: d_vec(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    :: epseff(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER :: i, j, k
-!
-!----------------------------------------------------------------------
-!
-      !-tm from donald's verion:
-      do i=0, TVEC1
-         where (epseff > 0.0_RK)
-            d_vec(i, :, :) = d_vec(i, :, :)/ epseff
-         end where
-      end do
-      
-      END SUBROUTINE scale_down_defr
-!
-!**********************************************************************
-!
-      SUBROUTINE compute_work(plwork, d_vec, n, m)
-!
-!     Compute virtual plastic work for array of deformation rates
-!     applied to vertex stresses.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER, INTENT(IN)   :: n, m
-      REAL(RK), INTENT(OUT) :: plwork(0:MAX_VERT1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: d_vec(0:TVEC1, 0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      REAL(RK), pointer :: sig_fs(:,:) => NULL()
-      integer  :: my_phase(0:(n-1),0:(m-1))
-      INTEGER  :: n_edge, i, j, iphase
-!
-!----------------------------------------------------------------------
-!
-! tsh, 1/26/03
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)
-      
-      plwork = 0.0_RK
-      do iphase=1,numphases
-           
-         call CrystalTypeGet(ctype(iphase), VERTICES=sig_fs)
-                         
-         n_edge=ctype(iphase)%numvertices
-         sig_fs = sig_fs * crystal_parm(9,iphase)
-
-         do i = 0, (n_edge - 1)
-            do j = 0, TVEC1
-               where (my_phase .eq. iphase)
-                    plwork(i, :, :) = plwork(i, :, :) + sig_fs(j+1,i+1) * d_vec(j, :, :)
-               endwhere
-            end do
-         end do
-         !
-         deallocate(sig_fs)
-         !
-      end do !numphases
-      
-      END SUBROUTINE compute_work
-!
-!**********************************************************************
-!
-      SUBROUTINE find_vertex(vertex, direction, plwork, n, m)
-!
-!     Select the vertex which maximizes the plastic work.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-!     vertex: list of optimal vertex numbers for each grain (output)
-!     direction: sign of the vertex (1 or -1) (output)
-!     plwork: array of virtual plastic work for each grain and all vertices (in)
-!     n-edge: number of vertices
-!     n: number of grains
-!     m: number of elements
-!
-      INTEGER, INTENT(IN)     :: n, m
-      INTEGER, INTENT(OUT)    :: vertex(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT)   :: direction(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(INOUT) :: plwork(0:MAX_VERT1, 0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER, POINTER :: indices(:) => NULL()
-      REAL(RK) :: pa(0:(n - 1), 0:(m - 1))
-      INTEGER  :: i, j, iphase, numind, n_edge
-
-      integer  :: my_phase(0:(n-1),0:(m-1))
-!
-!----------------------------------------------------------------------
-!
-
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)
-!
-      vertex = 0
-      direction = -1.0_RK
-      do iphase=1,numphases 
-         call find_indices(numind, iphase, my_phase(n-1,:), indices)
-         n_edge=ctype(iphase)%numvertices
-         do i = 0, (n_edge - 1)
-            pa(:,indices) = abs(plwork(i, :, indices))
-            where (pa .gt. direction)
-               direction = pa
-               vertex = i
-            end where
-         end do
-         !
-         deallocate(indices)
-         !
-      enddo !numphases
-
-!  RC 6/24/2016: Reordered loops for better memory striding
-      do j = 0,(m - 1)
-        do i = 0,(n - 1)
-          direction(i, j) = plwork(vertex(i, j), i, j) / direction(i, j)
-        enddo
-      enddo
-!
-!     To keep from the vertex being reused
-!
-!  RC 6/24/2016: Reordered loops for better memory striding
-      do j = 0,(m - 1)
-        do i = 0,(n - 1)
-          plwork(vertex(i, j), i, j) = 0.0_RK
-        enddo
-      enddo
-
-      END SUBROUTINE find_vertex
-!
-!**********************************************************************
-!
-      SUBROUTINE vertex_stress(sig, vertex, direction, n, m)
-!
-!     Set initial guess (vertex stress) for nonlinear solver.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-!     sig: initial guesses for stresses (output)
-!     sig_fs: vertex stresses (input)
-!     vertex: optimal vertex numbers
-!     direction: sign to multiply vertex stress by
-!     n_edge: number of vertices
-!     n: number of grains
-!     m: number of elements
-!
-      INTEGER, INTENT(IN)   :: n, m
-!      
-      REAL(RK), INTENT(OUT) :: sig(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: direction(0:(n - 1), 0:(m - 1))
-      INTEGER,INTENT(IN)    :: vertex(0:(n - 1), 0:(m - 1))
-!
-
-      integer :: my_phase(0:(n-1),0:(m-1))
-!
-!     Locals:
-!
-!
-      REAL(RK), pointer ::  sig_fs(:,:) => NULL()
-!
-      INTEGER :: n_edge, i, j, iphase
-!
-!----------------------------------------------------------------------
-!
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)
-            
-      do iphase=1,numphases
- 
-         call CrystalTypeGet(ctype(iphase), VERTICES=sig_fs)
-         
-         n_edge=ctype(iphase)%numvertices
-! RC 6/24/2016 reordered the where loops as well so it only runs the parts needed
-
-         sig_fs = sig_fs * crystal_parm(9,iphase)
-!  RC 6/24/2016: Reordered loops for better memory striding
-        do j = 0, (n_edge - 1)
-            do i = 0, TVEC1
-               where (j .eq. vertex)
-                where (my_phase .eq. iphase)
-                    sig(i, :, :) = sig_fs(i+1,j+1) * direction(:,:)
-                end where
-               end where
-            enddo
-        enddo
-         !
-         deallocate(sig_fs)
-         !
-      enddo !numphases
- 
-      END SUBROUTINE vertex_stress
-!
-!**********************************************************************
-!
-      SUBROUTINE scale_stress(sig, crss, n, m)
-
-!
-!     Rescale stress initial guess according to hardness.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-!     sig: initial guess for stress (input/output)
-!     crss: crystal hardnesses
-!     p_hat_vec (ctype%schmid_sym): array of Schmid tensors
-!     n_slip: number of slip systems
-!     n: number of grains
-!     m: number of elements
-!
-      INTEGER, INTENT(IN)     :: n, m
-!
-      REAL(RK), INTENT(INOUT) :: sig(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    :: crss(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-
-      INTEGER :: my_phase(0:(n - 1), 0:(m - 1))
-      INTEGER :: islip, i, j, k, iphase
-      INTEGER :: numind, n_slip
-      INTEGER, POINTER :: indices(:)  => NULL()
-!
-      REAL(RK), POINTER  :: p_hat_vec(:,:) => NULL()
-      REAL(RK) :: taumax(0:(n - 1), 0:(m - 1))
-      REAL(RK) :: tau   (0:(n - 1), 0:(m - 1))
-!
-!----------------------------------------------------------------------
-!
-
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)  
-
-      !-tm  from donald's verion:      
-      taumax = 1.0d-8  ! deb/ prevent div by 0
-      !taumax = 0.0d0
-      
-      
-      do iphase=1,numphases
- 
-         call CrystalTypeGet(ctype(iphase), DEV=p_hat_vec)
-         
-         n_slip=ctype(iphase)%numslip
-    
-         call find_indices(numind, iphase, my_phase(n-1,:), indices)
-         
-         do islip = 0, (n_slip - 1)   
-            call ss_project(tau, p_hat_vec(:, islip+1), sig, n, m, numind, indices)
-            tau(:,indices) = dabs(tau(:,indices))
-            where ((my_phase .EQ. iphase) .and.(tau .gt. taumax))
-                  taumax = tau
-            end where
-            ! maybe:
-            ! where ((tau(:,indices) .gt. taumax) taumax=tau            
-         enddo !n_slip
-         !
-         deallocate(p_hat_vec)
-         deallocate(indices)
-         !
-      enddo !numphases
-      
-      tau = crss / taumax
-
-      do k = 0,(m - 1)
-        do j = 0,(n - 1)
-          do i = 0,TVEC1
-            sig(i, j, k) = sig(i, j, k) * tau(j, k)
-          enddo
-        enddo
-      enddo
-      
-      END SUBROUTINE scale_stress
-!
-!**********************************************************************
-!
-      SUBROUTINE ss_project(proj, plocal, tensor, n, m, numind, indices)
-!
-!     Compute inner product of array of tensors with a fixed tensor.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER, INTENT(IN)   :: n, m, numind, indices(1:numind)
-!
-      REAL(RK), INTENT(OUT) :: proj(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: plocal(0:TVEC1)
-      REAL(RK), INTENT(IN)  :: tensor(0:TVEC1, 0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER  :: i
-      REAL(RK) :: proj_tmp(0:(n-1),0:(numind-1))
-!
-!----------------------------------------------------------------------
-!
-      
-      proj_tmp = 0.0_RK
-      do i = 0, TVEC1
-         proj_tmp = proj_tmp + plocal(i) * tensor(i, :, indices)
-      end do
-      proj(:,indices)=proj_tmp
-
-      END SUBROUTINE ss_project
-!
-!**********************************************************************
-!
-      SUBROUTINE solve_newton_vp(&
-  &       sig, d_vec, crss, irc, eps,&
-  &       converged, n, m, vp_log)
-!
-!     Nonlinear solution of viscoplastic crystal stress equations.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-!     sig: initial guess for stresses and final solution (input/output)
-!     d_vec: deformation rate for which to solve
-!     crss: crystal hardnesses
-!     irc: return flag
-!     eps: error tolerance for nonlinear solution
-!     converged: array telling what crystals have already converged
-!     n: number of grains
-!     m: number of elements
-!     vp_log: write viscoplastic convergence output to log files
-!
-      INTEGER, INTENT(IN)     :: n, m
-      REAL(RK), INTENT(IN)    :: eps
-      INTEGER, INTENT(OUT)    :: irc
-      LOGICAL, INTENT(INOUT)  :: converged(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(INOUT) :: sig  (0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    :: d_vec(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    :: crss(0:(n - 1), 0:(m - 1))
-      LOGICAL, INTENT(IN)     :: vp_log
-!
-!     Locals:
-!
-!
-      LOGICAL&
-  &   newton_ok(0:(n - 1), 0:(m - 1))
-!
-      INTEGER&
-  &   i, iter, nm, inewton, k, w
-!
-      REAL(RK)&
-  &   res      (0:(n - 1), 0:(m - 1)),&
-  &   res_n    (0:(n - 1), 0:(m - 1)),&
-  &   fact     (0:(n - 1), 0:(m - 1)),&
-  &   ratio_res(0:(n - 1), 0:(m - 1)),&
-  &   res_aux  (0:(n - 1), 0:(m - 1))
-      REAL(RK)&
-  &   sig_0(0:TVEC1, 0:(n - 1), 0:(m - 1)),&
-  &   rhs  (0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)&
-  &   rss  (0:MAXSLIP1, 0:(n - 1), 0:(m - 1)),&
-  &   shear(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK)&
-  &   stif(0:TVEC1, 0:TVEC1, 0:(n - 1), 0:(m - 1)),&
-  &   del_s        (0:TVEC1, 0:(n - 1), 0:(m - 1)),&
-  &   xlambda      (0:TVEC1, 0:(n - 1), 0:(m - 1))
-! 
-!----------------------------------------------------------------------
-!
-      nm    = n * m
-      irc   = 0
-      sig_0 = 0.0_RK
-
-      newton_ok = .true.
-
-      do iter = 1, cv_options % sx_max_iters_newton 
-        
-         sig_0 = sig
-
-         call get_res(res_n, rhs, rss, shear, sig, d_vec, crss, n, m) 
-
-         call form_crystif(stif, rss, shear, crss, n, m)
-
-         del_s = rhs
-
-         call solvit(stif, del_s, n, m)
-
-         call check_diagonals(stif, newton_ok, n, m)
-
-         xlambda = sig_0 + del_s
-      
-         call get_res(res, rhs, rss, shear, xlambda, d_vec, crss, n, m) 
-
-         fact = 1.0_RK
-         ratio_res = res / res_n
- 
-         do while(any(ratio_res .gt. 1.0_RK .and. newton_ok .and. .not. converged))
- 
-            where    (ratio_res .gt. 1.0_RK .and. newton_ok .and. .not. converged)   fact = fact*0.5_RK
-
-            if( any(fact .lt. 0.001_RK) ) then
-               if (vp_log .and. (myid .eq. 0)) then
-                  WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_VP: Line &
-                    &search failure for ', count(fact .lt. 0.001_RK), ' grains.'
-                  !PRINT *, ' solve_newton_vp: line search failure for ',&
-                  !     &           count(fact .lt. 0.001_RK), ' grains'
-               endif
-               where(fact .lt. 0.001_RK) newton_ok = .false.
-            endif
-              
-            xlambda(0, :, :) = sig_0(0, :, :) + fact * del_s(0, :, :) 
-            xlambda(1, :, :) = sig_0(1, :, :) + fact * del_s(1, :, :) 
-            xlambda(2, :, :) = sig_0(2, :, :) + fact * del_s(2, :, :) 
-            xlambda(3, :, :) = sig_0(3, :, :) + fact * del_s(3, :, :) 
-            xlambda(4, :, :) = sig_0(4, :, :) + fact * del_s(4, :, :) 
-
-            call get_res(res_aux, rhs, rss, shear, xlambda, d_vec, crss, n, m) 
-
-            where(ratio_res .gt. 1.0_RK .and. newton_ok .and. .not. converged)
-               res = res_aux
-               ratio_res = res / res_n
-            endwhere
-
-         enddo !do while
- 
-         where(newton_ok .and. .not. converged)
-            sig(0, :, :) = sig_0(0, :, :) + fact * del_s(0, :, :)
-            sig(1, :, :) = sig_0(1, :, :) + fact * del_s(1, :, :)
-            sig(2, :, :) = sig_0(2, :, :) + fact * del_s(2, :, :)
-            sig(3, :, :) = sig_0(3, :, :) + fact * del_s(3, :, :)
-            sig(4, :, :) = sig_0(4, :, :) + fact * del_s(4, :, :)
-         endwhere
-
-         where(res .le. eps .and. newton_ok) converged = .true.
-!
-!        Return if all grains have converged or solution is only an estimate.
-!
-         inewton = count(.not. newton_ok)
-         if( ((count(converged) + inewton) .eq. nm) .and. (myid .eq. 0) ) then
-           if ((inewton .gt. 0) .and. vp_log) then
-             WRITE(DFLT_U,'(A)') 'Info   :     > SOLVE_NEWTON_VP: Converged = ', &
-                & count(converged), ' remaining = ', inewton, ' minval res = ',&
-                & minval(res, mask=converged), ' maxval res = ', &
-                & maxval(res, mask=converged)
-            end if
-             irc = inewton
-           RETURN
-         endif
-     
-      enddo !newton_iterations
-
-      irc = -2
-
-!1000  FORMAT(' solve_newton_vp: converged =', i6, ' remaining =',i6,' minval res.=',e15.5,' maxval res.=',e15.5)
-
-      END SUBROUTINE solve_newton_vp
-!
-!**********************************************************************
-!
-      SUBROUTINE get_res(res, rhs, rss, shear, sig, d, crss, n, m)
-!
-!     Compute residual for nonlinear VP crystal stress equation.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER   n_slip, n, m
-      REAL(RK), INTENT(OUT) :: res(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT) :: rhs(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT) :: rss(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(OUT) :: shear(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: sig(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: d(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)  :: crss(0:(n - 1), 0:(m - 1))
-!
-      integer :: my_phase(0:(n-1),0:(m-1))
-!
-!     Locals:
-!
-      INTEGER, POINTER  :: indices(:) => NULL()
-      REAL(RK), POINTER :: p(:,:) => NULL()
-      INTEGER :: islip, j, k, iphase, numind, i
-      REAL(RK) :: xm_fake 
-
-!
-!----------------------------------------------------------------------
-!
-! tsh, 1/26/03
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)      
-      
-      rhs = - d
-      res = 0.0_RK
-
-      do iphase=1,numphases
-   
-         call CrystalTypeGet(ctype(iphase), DEV=p)
-   
-         n_slip=ctype(iphase)%numslip
-
-         call find_indices(numind, iphase, my_phase(n-1,:), indices)
-
-         do islip = 0, (n_slip - 1)
-
-            call ss_project(rss(islip,:,:),p(:,islip+1), sig, n, m, numind, indices)
-            rss(islip,:,indices)=rss(islip,:,indices)/crss(:,indices) 
-
-            where (abs(rss(islip,:,indices)) .lt. t_min(iphase)) 
-               rss(islip,:,indices) = 0.0_RK
-            endwhere
-
-            xm_fake=0.4_RK
-            !xm_fake=0.02d0
-            
-            call power_law(shear(islip, :, :), rss(islip, :, :),&
-  &                xm_fake, crystal_parm(1,iphase), t_min(iphase),&
-  &                n, m, numind, indices)
- 
-            do j=0,TVEC1
-               rhs(j, :, indices) = rhs(j, :, indices) + p(j+1, islip+1) * shear(islip, :, indices)
-            enddo
-            
-         enddo !n_slip
-         !
-         deallocate(p)
-         deallocate(indices)
-         !
-      enddo !numphases
-         
-      do j = 0, DIMS1
-         res = res + rhs(j, :, :)**2.0_RK
-      end do
-      res = sqrt(res)
-      
-      END SUBROUTINE get_res
-!
-!**********************************************************************
-!
-      SUBROUTINE form_crystif(stif, rss, shear, crss, n, m)
-!
-!     Form single crystal stiffness matrix.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER   n_slip, n, m
-      REAL(RK), pointer :: p(:,:) => NULL()
-      REAL(RK), INTENT(OUT)  ::   stif(0:TVEC1, 0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   rss(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   shear(0:MAXSLIP1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   crss(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-
-      integer   my_phase(0:(n-1),0:(m-1))
-      INTEGER   i, j, k, islip, iphase, numind
-      INTEGER, POINTER :: indices(:) => NULL()
-      REAL(RK)    comp(0:(n - 1), 0:(m - 1))
-      
-      REAL(RK) xm_fake
-!
-!----------------------------------------------------------------------
-!
-      my_phase(n-1,:) = phase(el_sub1:el_sup1)
-            
-      stif = 0.0_RK
-      do iphase=1,numphases
-
-         call CrystalTypeGet(ctype(iphase), DEV=p)
-         
-         n_slip=ctype(iphase)%numslip             
-
-         call find_indices(numind, iphase, my_phase(n-1,:), indices)
-
-         do islip = 0, (n_slip - 1)
-  
-            xm_fake=0.4_RK
-            !xm_fake=0.02d0
-             
-            call compliance(comp, rss(islip, :, :),&
-  &                   shear(islip, :, :), crss, xm_fake, t_min(iphase),&
-  &                   n, m, numind, indices)
-  
-            do j = 0, TVEC1    
-               do k = 0, TVEC1
-                  stif(j, k, :, indices) = stif(j, k, :, indices) -&
-  &                 comp(:,indices) * p(j+1, islip+1) * p(k+1, islip+1)
-               enddo
-            enddo
-         enddo !num_slip
-         !
-         deallocate(p)
-         deallocate(indices)
-         !
-      enddo !numphases
-
-      END SUBROUTINE form_crystif
-!
-!**********************************************************************
-!
-      SUBROUTINE power_law(power, t, xm, a_0, t_min, n, m, numind, indices)
-!
-!     Power law for VP single crystal.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!        
-      INTEGER   n, m, numind, indices(1:numind)
-      REAL(RK)  :: t_min, xm, a_0 
-      REAL(RK), INTENT(OUT)  ::  power(0:(n - 1), 0:(m - 1)) 
-      REAL(RK), INTENT(IN)   ::  t(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      REAL(RK)    p
-      REAL(RK)    power_tmp(0:(n-1),0:(numind-1))
-      REAL(RK)    at(0:(n - 1), 0:(numind - 1))
-      REAL(RK)    alog(0:(n - 1), 0:(numind - 1))
-      REAL(RK)    blog(0:(n - 1), 0:(numind - 1))
-      INTEGER   i
-!
-!
-!----------------------------------------------------------------------
-
-      p  = 1.0_RK / xm - 1.0_RK
-      at = abs(t(:,indices))
-      
-      where (at .gt. t_min)
-          alog = dlog(at)
-          blog = p * alog
-          power_tmp = a_0 * t(:,indices) * dexp(blog)
-      elsewhere
-          power_tmp = 0.0_RK
-      endwhere  
-      
-      power(:,indices)=power_tmp 
-     
-      END SUBROUTINE power_law
-!
-!**********************************************************************
-!
-      SUBROUTINE compliance(comp, t, shear, crss, xm, t_min,&
-  &     n, m, numind, indices)
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER  :: n, m, numind, indices(1:numind)
-      REAL(RK) :: xm, t_min
-      REAL(RK), INTENT(OUT)  ::   comp(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   t(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   shear(0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)   ::   crss(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      REAL(RK) :: comp_tmp(0:(n-1),0:(numind-1))
-!
-!----------------------------------------------------------------------
-!
-      comp_tmp = 0.0_RK
-
-      WHERE (ABS(t(:,indices)) .GT. t_min)&
-           &           comp_tmp = shear(:, indices)/(t(:, indices)*crss(:, indices)*xm)
-      comp(:,indices)=comp_tmp
-
-      END SUBROUTINE compliance
-!
-!**********************************************************************
-!
-      SUBROUTINE solvit(a, x, n, m)
-!
-!     Solve an array of symmetric positive definite 5x5 systems.
-!
-!-----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER   n, m
-      REAL(RK), INTENT(IN)    ::  a(0:TVEC1, 0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(INOUT) ::  x(0:TVEC1, 0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      REAL(RK), DIMENSION(0:(n - 1), 0:(m - 1)) :: a11, a21, a22,&
-  &                                       a31, a32, a33,&
-  &                                       a41, a42, a43, a44,&
-  &                                       a51, a52, a53, a54, a55,&
-  &                                       x1, x2, x3, x4, x5,&
-  &                                       v1, v2, v3, v4
-!
-!-----------------------------------------------------------------------
-!
-      a11 = a(0, 0, :, :)
-      a21 = a(1, 0, :, :)
-      a31 = a(2, 0, :, :)
-      a41 = a(3, 0, :, :)
-      a51 = a(4, 0, :, :)
-      a22 = a(1, 1, :, :)
-      a32 = a(2, 1, :, :)
-      a42 = a(3, 1, :, :)
-      a52 = a(4, 1, :, :)
-      a33 = a(2, 2, :, :)
-      a43 = a(3, 2, :, :)
-      a53 = a(4, 2, :, :)
-      a44 = a(3, 3, :, :)
-      a54 = a(4, 3, :, :)
-      a55 = a(4, 4, :, :)
- 
-      x1 = x(0, :, :)
-      x2 = x(1, :, :)
-      x3 = x(2, :, :)
-      x4 = x(3, :, :)
-      x5 = x(4, :, :)
- 
-! **  A = LDL'.
-
-! **  j = 1.
-
-      a21 = a21 / a11
-      a31 = a31 / a11
-      a41 = a41 / a11
-      a51 = a51 / a11
-
-! **  j = 2.
-
-      v1 = a21 * a11
-
-      a22 = a22 - a21 * v1
-
-      a32 = (a32 - a31 * v1) / a22
-      a42 = (a42 - a41 * v1) / a22
-      a52 = (a52 - a51 * v1) / a22
-
-! **  j = 3.
-
-      v1 = a31 * a11
-      v2 = a32 * a22
-
-      a33 = a33 - a31 * v1 - a32 * v2
-         
-      a43 = (a43 - a41 * v1 - a42 * v2) / a33
-      a53 = (a53 - a51 * v1 - a52 * v2) / a33
-
-! **  j = 4.
-
-      v1 = a41 * a11
-      v2 = a42 * a22
-      v3 = a43 * a33
-
-      a44 = a44 - a41 * v1 - a42 * v2 - a43 * v3
-         
-      a54 = (a54 - a51 * v1 - a52 * v2 - a53 * v3) / a44
-
-! **  j = 5.
-
-      v1 = a51 * a11
-      v2 = a52 * a22
-      v3 = a53 * a33
-      v4 = a54 * a44
-
-      a55 = a55 - a51 * v1 - a52 * v2 - a53 * v3 - a54 * v4
-         
-! **  Ly=b.
-
-      x2 = x2 - a21 * x1
-      x3 = x3 - a31 * x1 - a32 * x2
-      x4 = x4 - a41 * x1 - a42 * x2 - a43 * x3
-      x5 = x5 - a51 * x1 - a52 * x2 - a53 * x3 - a54 * x4
-
-! **  Dz=y.
-
-      x1 = x1 / a11
-      x2 = x2 / a22
-      x3 = x3 / a33
-      x4 = x4 / a44
-      x5 = x5 / a55
-
-! **  L'x=z.
-
-      x4 = x4 - a54 * x5
-      x3 = x3 - a43 * x4 - a53 * x5
-      x2 = x2 - a32 * x3 - a42 * x4 - a52 * x5
-      x1 = x1 - a21 * x2 - a31 * x3 - a41 * x4 - a51 * x5
-
-      x(0, :, :) = x1
-      x(1, :, :) = x2
-      x(2, :, :) = x3
-      x(3, :, :) = x4
-      x(4, :, :) = x5
-
-      END SUBROUTINE solvit
-!
-!**********************************************************************
-!
-      SUBROUTINE check_diagonals(stif, newton_ok, n, m)
-!
-!     Determine where diagonal elements are small.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-      INTEGER   n, m
-      LOGICAL, INTENT(INOUT) :: newton_ok(0:(n - 1), 0:(m - 1))
-      REAL(RK),  INTENT(IN)    :: stif(0:TVEC1, 0:TVEC1, 0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER   i
-!
-!----------------------------------------------------------------------
-!
-      do i = 0, TVEC1
-         where (abs(stif(i, i, :, :)) .lt. VTINY) newton_ok = .false.
-      end do
-      
-      END SUBROUTINE check_diagonals
-!
-!**********************************************************************
-!
-      SUBROUTINE scale_up_sigm(sig, epseff, n, m)
-!
-!     Rescale the stress after solution is found.
-!
-!----------------------------------------------------------------------
-!
-!     Arguments:
-!
-!     sig: stress (input/output)
-!     xm: rate dependence
-!     epseff: effective deformation rate
-!     n: number of grains
-!     m: number of elements
-!
-      INTEGER   n, m
-      REAL(RK), INTENT(INOUT) :: sig(0:TVEC1, 0:(n - 1), 0:(m - 1))
-      REAL(RK), INTENT(IN)    :: epseff(0:(n - 1), 0:(m - 1))
-!
-!     Locals:
-!
-      INTEGER   i, j, k, numind, iphase
-      INTEGER, pointer :: indices(:)
-      REAL(RK)    scale(0:(n - 1), 0:(m - 1))
-      integer   my_phase(0:(m - 1))
-      
-      REAL(RK) xm_fake
-!
-!----------------------------------------------------------------------
-!
-      my_phase(:) = phase(el_sub1:el_sup1)
-      
-      do iphase=1,numphases
-         !-tm        
-         ! scale = epseff**crystal_parm(0,iphase)         
-         xm_fake=0.4_RK
-         !xm_fake=0.02d0         
-         scale = epseff**xm_fake
-         
-         call find_indices(numind, iphase, my_phase, indices)
-         
-         do j = 0,(n - 1)
-            do i = 0,TVEC1
-               sig(i,j,indices) = sig(i,j,indices) * scale(j,indices)
-            enddo
-         enddo
-         !
-         deallocate(indices)
-         !
-      enddo !numphases
-      
-      END SUBROUTINE scale_up_sigm
-
-!**********************************************************************
-!
-    SUBROUTINE compute_avg_crss(crss,crss_avg,m_el)
-!
-!     Computes the average strength of the crystal slip systems
-!
-!----------------------------------------------------------------------
-!
-
-        REAL(RK), INTENT(IN)    :: crss  (0:MAXSLIP1, 0:ngrain1, el_sub1:el_sup1)
-        REAL(RK), INTENT(INOUT)   :: crss_avg  (0:ngrain1, el_sub1:el_sup1)
-        INTEGER, INTENT(IN) :: m_el
-
-        INTEGER,  POINTER :: indices(:) => NULL()
-
-        INTEGER :: islip, n_slip, iphase, numind
-        INTEGER :: my_phase(0:m_el-1)
-        my_phase(:) = phase(el_sub1:el_sup1)
-        !Goes through the total number of phases in the material
-        do iphase=1,numphases
-
-            !Finds the numbers of slip systems
-            call CrystalTypeGet(ctype(iphase))
-            n_slip=ctype(iphase)%numslip
-            !Finds the indices corresponding to the current phase the loop is on
-            call find_indices(numind, iphase, my_phase, indices)
-            !Sums up the crystal slip strengths corresponding to the given indices
-            do islip=0, n_slip-1
-                    crss_avg(:,indices+el_sub1)=crss_avg(:,indices+el_sub1)+crss(islip,:,indices+el_sub1)
-            enddo
-            !Calculates the average of these slip systems
-            crss_avg(:,indices+el_sub1)=crss_avg(:,indices+el_sub1)/n_slip
-            !WRITE(*,*) numind
-            !write(*,*) size(indices)
-            !write(*,*) my_phase
-            ! write(*,*) crss_avg(:,indices)
-            deallocate (indices)
-
-        enddo
-
-    END SUBROUTINE compute_avg_crss
-
-END MODULE StressSolveVpModule
+    !
+    SUBROUTINE STRESS_SOLVE_VP(SIG, D_VEC_LAT, CRSS, EPSEFF, VP_LOG)
+    !
+    ! Driver routine which takes care of scaling and initial guesses
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SIG:
+    ! D_VEC_LAT:
+    ! CRSS:
+    ! EPSEFF:
+    ! VP_LOG:
+    !
+    REAL(RK), INTENT(OUT) :: SIG(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: D_VEC_LAT(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: CRSS  (0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(IN) :: EPSEFF(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    LOGICAL,  INTENT(IN) :: VP_LOG
+    !
+    ! Locals:
+    !
+    LOGICAL :: CONVERGED(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    INTEGER :: I_EDGE
+    INTEGER :: IER
+    INTEGER :: M_EL
+    INTEGER :: NTRIALS
+    INTEGER :: VERTEX(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: DIRECTION(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: PLWORK(0:MAX_VERT1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SIG_T(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: CRSS_AVG (0:NGRAIN1, EL_SUB1:EL_SUP1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    M_EL = EL_SUP1 - EL_SUB1 + 1
+    CRSS_AVG = 0.0_RK
+    !
+    CALL SCALE_DOWN_DEFR(D_VEC_LAT, EPSEFF, NGRAIN, M_EL)
+    CALL COMPUTE_WORK(PLWORK, D_VEC_LAT, NGRAIN, M_EL)
+    CALL COMPUTE_AVG_CRSS(CRSS,CRSS_AVG,M_EL)
+    !
+    CONVERGED = .FALSE.
+    !
+    ! This loop used to be from 1 to N_EDGE, in order to try all vertices as
+    !   initial guesses. However, this can be very time-consuming and doesn't
+    !   usually help.
+    !
+    NTRIALS = 4
+    !
+    DO I_EDGE = 1, NTRIALS
+        !
+        CALL FIND_VERTEX(VERTEX, DIRECTION, PLWORK,  NGRAIN, M_EL)
+        !
+        CALL VERTEX_STRESS(SIG_T, VERTEX, DIRECTION, NGRAIN, M_EL)
+        !
+        CALL SCALE_STRESS(SIG_T, CRSS_AVG, NGRAIN, M_EL)
+        !
+        WHERE (.NOT. CONVERGED)
+            !
+            SIG(0, :, :) = SIG_T(0, :, :)
+            SIG(1, :, :) = SIG_T(1, :, :)
+            SIG(2, :, :) = SIG_T(2, :, :)
+            SIG(3, :, :) = SIG_T(3, :, :)
+            SIG(4, :, :) = SIG_T(4, :, :)
+            !
+        END WHERE
+        !
+        CALL SOLVE_NEWTON_VP(SIG, D_VEC_LAT, CRSS_AVG, IER, CV_OPTIONS%SX_TOL, &
+            & CONVERGED, NGRAIN, M_EL, VP_LOG)
+        !
+        IF (IER .EQ. 0) GO TO 50
+        !
+    END DO
+    !
+    IF ((MYID .EQ. 0) .AND. VP_LOG) THEN
+        !
+        WRITE(DFLT_U, '(A)') 'Warning:       . STRESS_SOLVE_VP: '
+        WRITE(DFLT_U, '(A)') 'Warning:       . ',COUNT(.NOT. converged),'&
+            & elements did not converge'
+        WRITE(DFLT_U, '(A)') 'Warning:       . after ', NTRIALS,' trials.'
+        !
+    END IF
+    !
+    WHERE (.NOT. CONVERGED)
+        !
+        SIG(0, :, :) = SIG_T(0, :, :)
+        SIG(1, :, :) = SIG_T(1, :, :)
+        SIG(2, :, :) = SIG_T(2, :, :)
+        SIG(3, :, :) = SIG_T(3, :, :)
+        SIG(4, :, :) = SIG_T(4, :, :)
+        !
+    END WHERE
+    !
+    50 CONTINUE
+    !
+    CALL SCALE_UP_SIGM(SIG, EPSEFF, NGRAIN, M_EL)
+    !
+    END SUBROUTINE STRESS_SOLVE_VP
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SCALE_DOWN_DEFR(D_VEC, EPSEFF, N, M)
+    !
+    ! Rescale the deformation rate to unit size.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! D_VEC: Array of deformation rates as 5-vectors (input/output)
+    ! EPSEFF: Effective deformation of these tensors (input)
+    ! N: Number of grains
+    ! M: Number of elements
+    !
+    REAL(RK), INTENT(INOUT) :: D_VEC(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: EPSEFF(0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    !
+    !---------------------------------------------------------------------------
+    !
+    !-tm from donald's verion:
+    !
+    DO I = 0, TVEC1
+        !
+        WHERE (EPSEFF > 0.0_RK)
+            !
+            D_VEC(I, :, :) = D_VEC(I, :, :) / EPSEFF
+            !
+        END WHERE
+        !
+    END DO
+    !
+    END SUBROUTINE SCALE_DOWN_DEFR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE COMPUTE_WORK(PLWORK, D_VEC, N, M)
+    !
+    ! Compute virtual plastic work for array of deformation rates applied to
+    !   vertex stresses.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! PLWORK:
+    ! D_VEC:
+    ! N:
+    ! M:
+    !
+    REAL(RK), INTENT(OUT) :: PLWORK(0:MAX_VERT1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: D_VEC(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    !
+    ! Locals:
+    !
+    REAL(RK), POINTER :: SIG_FS(:,:)=>NULL()
+    INTEGER :: MY_PHASE(0:(N - 1), 0:(M - 1))
+    INTEGER :: N_EDGE
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: IPHASE
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! tsh, 1/26/03
+    MY_PHASE(N - 1, :) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    PLWORK = 0.0_RK
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), VERTICES = SIG_FS)
+        !
+        N_EDGE = CTYPE(IPHASE)%NUMVERTICES
+        SIG_FS = SIG_FS * CRYSTAL_PARM(9,IPHASE)
+        !
+        DO I = 0, (N_EDGE - 1)
+            !
+            DO J = 0, TVEC1
+                !
+                WHERE (MY_PHASE .EQ. IPHASE)
+                    !
+                    PLWORK(I, :, :) = PLWORK(I, :, :) + SIG_FS(J + 1, I + 1) &
+                        & * D_VEC(J, :, :)
+                    !
+                END WHERE
+                !
+            END DO
+            !
+        END DO
+        !
+        DEALLOCATE(SIG_FS)
+        !
+    END DO !NUMPHASES
+    !
+    END SUBROUTINE COMPUTE_WORK
+    !
+    !===========================================================================
+    !
+    SUBROUTINE FIND_VERTEX(VERTEX, DIRECTION, PLWORK, N, M)
+    !
+    ! Select the vertex which maximizes the plastic work.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! VERTEX: List of optimal vertex numbers for each grain (output)
+    ! DIRECTION: Sign of the vertex (1 or -1) (output)
+    ! PLWORK: Array of virtual plastic work for each grain and all vertices (in)
+    ! N: Number of grains
+    ! M: Number of elements
+    !
+    INTEGER, INTENT(OUT) :: VERTEX(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: DIRECTION(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(INOUT) :: PLWORK(0:MAX_VERT1, 0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    !
+    ! Locals:
+    !
+    INTEGER, POINTER :: INDICES(:)=>NULL()
+    REAL(RK) :: PA(0:(N - 1), 0:(M - 1))
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: IPHASE
+    INTEGER :: NUMIND
+    INTEGER :: N_EDGE
+    INTEGER  :: MY_PHASE(0:(N - 1),0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    VERTEX = 0
+    DIRECTION = -1.0_RK
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N - 1, :), INDICES)
+        !
+        N_EDGE = CTYPE(IPHASE)%NUMVERTICES
+        DO I = 0, (N_EDGE - 1)
+            !
+            PA(:,INDICES) = ABS(PLWORK(I, :, INDICES))
+            !
+            WHERE (PA .GT. DIRECTION)
+                !
+                DIRECTION = PA
+                VERTEX = I
+                !
+            END WHERE
+            !
+        END DO
+        !
+        DEALLOCATE(INDICES)
+        !
+    END DO !NUMPHASES
+    !
+    ! RC 6/24/2016: Reordered loops for better memory striding
+    !
+    DO J = 0,(M - 1)
+        !
+        DO I = 0,(N - 1)
+            !
+            DIRECTION(I, J) = PLWORK(VERTEX(I, J), I, J) / DIRECTION(I, J)
+            !
+        END DO
+        !
+    END DO
+    !
+    ! To keep from the vertex being reused
+    !
+    !  RC 6/24/2016: Reordered loops for better memory striding
+    DO J = 0,(M - 1)
+        !
+        DO I = 0,(N - 1)
+            !
+            PLWORK(VERTEX(I, J), I, J) = 0.0_RK
+            !
+        END DO
+        !
+    END DO
+    !
+    END SUBROUTINE FIND_VERTEX
+    !
+    !===========================================================================
+    !
+    SUBROUTINE VERTEX_STRESS(SIG, VERTEX, DIRECTION, N, M)
+    !
+    !     Set initial guess (vertex stress) for nonlinear solver.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SIG: Initial guesses for stresses (output)
+    ! SIG_FS: Vertex stresses (input)
+    ! VERTEX: Optimal vertex numbers
+    ! DIRECTION: Sign to multiply vertex stress by
+    ! N: Number of grains
+    ! M: Number of elements
+    !
+    REAL(RK), INTENT(OUT) :: SIG(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    INTEGER,INTENT(IN) :: VERTEX(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: DIRECTION(0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: MY_PHASE(0:(N - 1),0:(M - 1))
+    REAL(RK), POINTER :: SIG_FS(:,:) => NULL()
+    INTEGER :: N_EDGE
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: IPHASE
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), VERTICES = SIG_FS)
+        !
+        N_EDGE = CTYPE(IPHASE)%NUMVERTICES
+        ! RC 6/24/2016 reordered the WHERE loops as well so it only runs the
+        !   parts needed
+        !
+        SIG_FS = SIG_FS * CRYSTAL_PARM(9, IPHASE)
+        !
+        ! RC 6/24/2016: Reordered loops for better memory striding
+        DO J = 0, (N_EDGE - 1)
+            !
+            DO I = 0, TVEC1
+                !
+                WHERE (J .EQ. VERTEX)
+                    !
+                    WHERE (MY_PHASE .EQ. IPHASE)
+                        !
+                        SIG(I, :, :) = SIG_FS(I + 1, J + 1) * DIRECTION(:, :)
+                        !
+                    END WHERE
+                    !
+                END WHERE
+                !
+            END DO
+            !
+        END DO
+        !
+        DEALLOCATE(SIG_FS)
+        !
+    END DO !NUMPHASES
+    !
+    END SUBROUTINE VERTEX_STRESS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SCALE_STRESS(SIG, CRSS, N, M)
+    !
+    ! Rescale stress initial guess according to hardness.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SIG: Initial guess for stress (input/output)
+    ! CRSS: Crystal hardnesses
+    ! N: Number of grains
+    ! M: Number of elements
+    !
+    REAL(RK), INTENT(INOUT) :: SIG(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: CRSS(0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: MY_PHASE(0:(N - 1), 0:(M - 1))
+    INTEGER :: ISLIP
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: IPHASE
+    INTEGER :: NUMIND
+    INTEGER :: N_SLIP
+    INTEGER, POINTER :: INDICES(:)=>NULL()
+    REAL(RK), POINTER  :: P_HAT_VEC(:, :)=>NULL()
+    REAL(RK) :: TAUMAX(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: TAU(0:(N - 1), 0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    !-tm  from donald's verion:
+    !
+    TAUMAX = 1.0E-8_RK  ! deb/ prevent div by 0
+    !TAUMAX = 0.0d0
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P_HAT_VEC)
+        !
+        N_SLIP = CTYPE(IPHASE)%NUMSLIP
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N - 1, :), INDICES)
+        !
+        DO ISLIP = 0, (N_SLIP - 1)
+            !
+            CALL SS_PROJECT(TAU, P_HAT_VEC(:, ISLIP + 1), SIG, N, M, NUMIND, &
+                & INDICES)
+            !
+            TAU(:,INDICES) = DABS(TAU(:, INDICES))
+            !
+            ! maybe: WHERE ((TAU(:,INDICES) .GT. TAUMAX) TAUMAX=TAU
+            WHERE ((MY_PHASE .EQ. IPHASE) .AND. (TAU .GT. TAUMAX))
+                !
+                TAUMAX = TAU
+                !
+            END WHERE
+            !
+        END DO !N_SLIP
+        !
+        DEALLOCATE(P_HAT_VEC)
+        DEALLOCATE(INDICES)
+        !
+    END DO !NUMPHASES
+    !
+    TAU = CRSS / TAUMAX
+    !
+    DO K = 0, (M - 1)
+        !
+        DO J = 0, (N - 1)
+            !
+            DO I = 0, TVEC1
+                !
+                SIG(I, J, K) = SIG(I, J, K) * TAU(J, K)
+                !
+            END DO
+            !
+        END DO
+        !
+    END DO
+    !
+    END SUBROUTINE SCALE_STRESS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SS_PROJECT(PROJ, PLOCAL, TENSOR, N, M, NUMIND, INDICES)
+    !
+    ! Compute inner product of array of tensors with a fixed tensor.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! PROJ:
+    ! PLOCAL:
+    ! TENSOR:
+    ! N:
+    ! M:
+    ! NUMIND:
+    ! INDICES:
+    !
+    REAL(RK), INTENT(OUT) :: PROJ(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: PLOCAL(0:TVEC1)
+    REAL(RK), INTENT(IN) :: TENSOR(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    INTEGER, INTENT(IN) :: NUMIND
+    INTEGER, INTENT(IN) :: INDICES(1:NUMIND)
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    REAL(RK) :: PROJ_TMP(0:(N - 1), 0:(NUMIND-1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    PROJ_TMP = 0.0_RK
+    !
+    DO I = 0, TVEC1
+        !
+        PROJ_TMP = PROJ_TMP + PLOCAL(I) * TENSOR(I, :, INDICES)
+        !
+    END DO
+    !
+    PROJ(:, INDICES) = PROJ_TMP
+    !
+    END SUBROUTINE SS_PROJECT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SOLVE_NEWTON_VP(SIG, D_VEC, CRSS, IRC, EPS, CONVERGED, N, M, &
+        &VP_LOG)
+    !
+    ! Nonlinear solution of viscoplastic crystal stress equations.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SIG: Initial guess for stresses and final solution (input/output)
+    ! D_VEC: Deformation rate for which to solve
+    ! CRSS: Crystal hardnesses
+    ! IRC: Return flag
+    ! EPS: Error tolerance for nonlinear solution
+    ! CONVERGED: Array telling what crystals have already converged
+    ! N: Number of grains
+    ! M: Number of elements
+    ! VP_LOG: Write viscoplastic convergence output to log files
+    !
+    REAL(RK), INTENT(INOUT) :: SIG(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: D_VEC(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: CRSS(0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(OUT) :: IRC
+    REAL(RK), INTENT(IN) :: EPS
+    LOGICAL, INTENT(INOUT) :: CONVERGED(0:(N - 1), 0:(M - 1))
+    INTEGER, INTENT(IN) :: N
+    INTEGER, INTENT(IN) :: M
+    LOGICAL, INTENT(IN) :: VP_LOG
+    !
+    ! Locals:
+    !
+    LOGICAL :: NEWTON_OK(0:(N - 1), 0:(M - 1))
+    !
+    INTEGER :: I
+    INTEGER :: ITER
+    INTEGER :: NM
+    INTEGER :: INEWTON
+    INTEGER :: K
+    INTEGER :: W
+    !
+    REAL(RK) :: RES(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RES_N(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: FACT(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RATIO_RES(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RES_AUX(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: SIG_0(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RHS(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: RSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: STIF(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: DEL_S(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK) :: XLAMBDA(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    NM = N * M
+    IRC = 0
+    SIG_0 = 0.0_RK
+    !
+    NEWTON_OK = .TRUE.
+    !
+    DO ITER = 1, CV_OPTIONS%SX_MAX_ITERS_NEWTON
+        !
+        SIG_0 = SIG
+        !
+        CALL GET_RES(RES_N, RHS, RSS, SHEAR, SIG, D_VEC, CRSS, N, M)
+        !
+        CALL FORM_CRYSTIF(stif, RSS, SHEAR, CRSS, N, M)
+        !
+        DEL_S = RHS
+        !
+        CALL SOLVIT(STIF, DEL_S, N, M)
+        !
+        CALL CHECK_DIAGONALS(STIF, NEWTON_OK, N, M)
+        !
+        XLAMBDA = SIG_0 + DEL_S
+        !
+        CALL GET_RES(RES, RHS, RSS, SHEAR, XLAMBDA, D_VEC, CRSS, N, M)
+        !
+        FACT = 1.0_RK
+        RATIO_RES = RES / RES_N
+        !
+        DO WHILE (ANY(RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. &
+            &CONVERGED))
+            !
+            WHERE (RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+                !
+                FACT = FACT*0.5_RK
+            END WHERE
+            !
+            IF (ANY(FACT .LT. 0.001_RK)) THEN
+                !
+                IF (VP_LOG .AND. (MYID .EQ. 0)) THEN
+                    !
+                    WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_VP: Line &
+                        &search failure for ', COUNT(FACT .LT. 0.001_RK), ' grains.'
+                    !
+                END IF
+                !
+                WHERE (FACT .LT. 0.001_RK)
+                    !
+                    NEWTON_OK = .FALSE.
+                    !
+                END WHERE
+                !
+            END IF
+            !
+            XLAMBDA(0, :, :) = SIG_0(0, :, :) + FACT * DEL_S(0, :, :)
+            XLAMBDA(1, :, :) = SIG_0(1, :, :) + FACT * DEL_S(1, :, :)
+            XLAMBDA(2, :, :) = SIG_0(2, :, :) + FACT * DEL_S(2, :, :)
+            XLAMBDA(3, :, :) = SIG_0(3, :, :) + FACT * DEL_S(3, :, :)
+            XLAMBDA(4, :, :) = SIG_0(4, :, :) + FACT * DEL_S(4, :, :)
+            !
+            CALL GET_RES(RES_AUX, RHS, RSS, SHEAR, XLAMBDA, D_VEC, CRSS, N, M)
+            !
+            WHERE(RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+                !
+                RES = RES_AUX
+                RATIO_RES = RES / RES_N
+                !
+            END WHERE
+            !
+        END DO
+        !
+        WHERE (NEWTON_OK .AND. .NOT. CONVERGED)
+            !
+            SIG(0, :, :) = SIG_0(0, :, :) + FACT * DEL_S(0, :, :)
+            SIG(1, :, :) = SIG_0(1, :, :) + FACT * DEL_S(1, :, :)
+            SIG(2, :, :) = SIG_0(2, :, :) + FACT * DEL_S(2, :, :)
+            SIG(3, :, :) = SIG_0(3, :, :) + FACT * DEL_S(3, :, :)
+            SIG(4, :, :) = SIG_0(4, :, :) + FACT * DEL_S(4, :, :)
+            !
+        END WHERE
+        !
+        WHERE (RES .LE. EPS .AND. NEWTON_OK)
+            !
+            CONVERGED = .TRUE.
+            !
+        END WHERE
+        !
+        ! Return if all grains have converged or solution is only an estimate.
+        !
+        INEWTON = COUNT(.NOT. NEWTON_OK)
+        !
+        IF (((COUNT(CONVERGED) + INEWTON) .EQ. NM) .AND. (MYID .EQ. 0) ) &
+            & THEN
+            !
+            IF ((INEWTON .GT. 0) .AND. VP_LOG) THEN
+                !
+                WRITE(DFLT_U,'(A)') 'Info   :     > SOLVE_NEWTON_VP: Converged = ', &
+                    & COUNT(CONVERGED), ' remaining = ', INEWTON, ' minval res = ',&
+                    & MINVAL(RES, MASK = CONVERGED), ' maxval res = ', &
+                    & MAXVAL(RES, MASK = CONVERGED)
+                !
+            END IF
+            !
+            IRC = INEWTON
+            !
+            RETURN
+            !
+        END IF
+        !
+    END DO !NEWTON_ITERATIONS
+    !
+    IRC = -2
+    !
+    END SUBROUTINE SOLVE_NEWTON_VP
+    !
+    !===========================================================================
+    !
+    SUBROUTINE GET_RES(RES, RHS, RSS, SHEAR, SIG, D, CRSS, N, M)
+    !
+    ! Compute residual for nonlinear VP crystal stress equation.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! RES:
+    ! RHS:
+    ! RSS:
+    ! SHEAR:
+    ! SIG:
+    ! D:
+    ! CRSS:
+    ! N:
+    ! M:
+    !
+    REAL(RK), INTENT(OUT) :: RES(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: RHS(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: RSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(OUT) :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: SIG(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: D(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: CRSS(0:(N - 1), 0:(M - 1))
+    INTEGER :: N
+    INTEGER :: M
+    !
+    !     Locals:
+    !
+    INTEGER :: MY_PHASE(0:(N - 1), 0:(M - 1))
+    INTEGER :: N_SLIP
+    INTEGER, POINTER :: INDICES(:)=>NULL()
+    REAL(RK), POINTER :: P(:, :)=>NULL()
+    INTEGER :: ISLIP
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: IPHASE
+    INTEGER :: NUMIND
+    INTEGER :: I
+    REAL(RK) :: XM_FAKE
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! tsh, 1/26/03
+    MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    RHS = -D
+    RES = 0.0_RK
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P)
+        !
+        N_SLIP = CTYPE(IPHASE)%NUMSLIP
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N - 1, :), INDICES)
+        !
+        DO ISLIP = 0, (N_SLIP - 1)
+            !
+            CALL SS_PROJECT(RSS(ISLIP, :, :), P(:, ISLIP + 1), SIG, N, M, &
+                & NUMIND, INDICES)
+            !
+            RSS(ISLIP, :, INDICES) = RSS(ISLIP, :, INDICES) / CRSS(:, INDICES)
+            !
+            WHERE (ABS(RSS(ISLIP, :, INDICES)) .LT. T_MIN(IPHASE))
+                !
+                RSS(ISLIP, :, INDICES) = 0.0_RK
+                !
+            END WHERE
+            !
+            XM_FAKE = 0.4_RK
+            !XM_FAKE=0.02d0
+            !
+            CALL POWER_LAW(SHEAR(ISLIP, :, :), RSS(ISLIP, :, :), XM_FAKE, &
+                & CRYSTAL_PARM(1, IPHASE), T_MIN(IPHASE), N, M, NUMIND, INDICES)
+            !
+            DO J = 0, TVEC1
+                !
+                RHS(J, :, INDICES) = RHS(J, :, INDICES) + P(J + 1, ISLIP + 1) &
+                    & * SHEAR(ISLIP, :, INDICES)
+                !
+            END DO
+            !
+        END DO !N_SLIP
+        !
+        DEALLOCATE(P)
+        DEALLOCATE(INDICES)
+        !
+    END DO !NUMPHASES
+    !
+    DO J = 0, DIMS1
+        !
+        RES = RES + RHS(J, :, :) ** 2.0_RK
+        !
+    END DO
+    !
+    RES = SQRT(RES)
+    !
+    END SUBROUTINE GET_RES
+    !
+    !===========================================================================
+    !
+    SUBROUTINE FORM_CRYSTIF(STIF, RSS, SHEAR, CRSS, N, M)
+    !
+    ! Form single crystal stiffness matrix.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! STIF:
+    ! RSS:
+    ! SHEAR:
+    ! CRSS:
+    ! N:
+    ! M:
+    !
+    REAL(RK), INTENT(OUT) :: STIF(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: RSS(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: SHEAR(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: CRSS(0:(N - 1), 0:(M - 1))
+    INTEGER :: N
+    INTEGER :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: N_SLIP
+    REAL(RK), POINTER :: P(:, :)=>NULL()
+    INTEGER :: MY_PHASE(0:(N - 1),0:(M - 1))
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: ISLIP
+    INTEGER :: IPHASE
+    INTEGER :: NUMIND
+    INTEGER, POINTER :: INDICES(:)=>NULL()
+    REAL(RK) :: COMP(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: XM_FAKE
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(N - 1, :) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    STIF = 0.0_RK
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV = P)
+        !
+        N_SLIP = CTYPE(IPHASE)%NUMSLIP
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N - 1, :), INDICES)
+        !
+        DO ISLIP = 0, (N_SLIP - 1)
+            !
+            XM_FAKE = 0.4_RK
+            !XM_FAKE=0.02d0
+            !
+            CALL COMPLIANCE(COMP, RSS(ISLIP, :, :), SHEAR(ISLIP, :, :), CRSS, &
+                & XM_FAKE, T_MIN(IPHASE), N, M, NUMIND, INDICES)
+            !
+            DO J = 0, TVEC1
+                !
+                DO K = 0, TVEC1
+                    !
+                    STIF(J, K, :, INDICES) = STIF(J, K, :, INDICES) - &
+                        & COMP(:,INDICES) * P(J + 1, ISLIP + 1) * &
+                        & P(K + 1, ISLIP + 1)
+                    !
+                END DO
+                !
+            END DO
+            !
+        END DO !N_SLIP
+        !
+        DEALLOCATE(P)
+        DEALLOCATE(INDICES)
+        !
+    END DO !NUMPHASES
+    !
+    END SUBROUTINE FORM_CRYSTIF
+    !
+    !===========================================================================
+    !
+    SUBROUTINE POWER_LAW(POWER, T, XM, A_0, T_MIN, N, M, NUMIND, INDICES)
+    !
+    ! Power law for VP single crystal.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! POWER:
+    ! T:
+    ! XM:
+    ! A_0:
+    ! T_MIN:
+    ! N:
+    ! M:
+    ! NUMIND:
+    ! INDICES:
+    !
+    REAL(RK), INTENT(OUT) :: POWER(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: T(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: XM
+    REAL(RK) :: A_0
+    REAL(RK) :: T_MIN
+    INTEGER :: N
+    INTEGER :: M
+    INTEGER :: NUMIND
+    INTEGER :: INDICES(1:NUMIND)
+    !
+    ! Locals:
+    !
+    REAL(RK) :: P
+    REAL(RK) :: POWER_TMP(0:(N - 1),0:(NUMIND-1))
+    REAL(RK) :: AT(0:(N - 1), 0:(NUMIND - 1))
+    REAL(RK) :: ALOG(0:(N - 1), 0:(NUMIND - 1))
+    REAL(RK) :: BLOG(0:(N - 1), 0:(NUMIND - 1))
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    P = 1.0_RK / XM - 1.0_RK
+    AT = ABS(T(:,INDICES))
+    !
+    WHERE (AT .GT. T_MIN)
+        !
+        ALOG = DLOG(AT)
+        BLOG = p * ALOG
+        POWER_TMP = A_0 * T(:, INDICES) * DEXP(BLOG)
+        !
+    ELSE WHERE
+        !
+        POWER_TMP = 0.0_RK
+        !
+    END WHERE
+    !
+    POWER(:, INDICES) = POWER_TMP
+    !
+    END SUBROUTINE POWER_LAW
+    !
+    !===========================================================================
+    !
+    SUBROUTINE COMPLIANCE(COMP, T, SHEAR, CRSS, XM, T_MIN, N, M, NUMIND, &
+        & INDICES)
+    !
+    ! Form crystal compliance matrices
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! COMP:
+    ! T:
+    ! SHEAR:
+    ! CRSS:
+    ! XM:
+    ! T_MIN:
+    ! N:
+    ! M:
+    ! NUMIND:
+    ! INDICES:
+    !
+    REAL(RK), INTENT(OUT) :: COMP(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: T(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: SHEAR(0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: CRSS(0:(N - 1), 0:(M - 1))
+    REAL(RK) :: T_MIN
+    INTEGER :: N
+    INTEGER :: M
+    INTEGER :: NUMIND
+    INTEGER :: INDICES(1:NUMIND)
+    !
+    ! Locals:
+    !
+    REAL(RK) :: XM
+    REAL(RK) :: COMP_TMP(0:(N - 1), 0:(NUMIND-1))
+    !
+    !---------------------------------------------------------------------------
+    !
+    COMP_TMP = 0.0_RK
+    !
+    WHERE (ABS(T(:,INDICES)) .GT. T_MIN)
+        !
+        COMP_TMP = SHEAR(:, INDICES) / (T(:, INDICES) * CRSS(:, INDICES) * XM)
+        !
+    END WHERE
+    !
+    COMP(:, INDICES) = COMP_TMP
+    !
+    END SUBROUTINE COMPLIANCE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SOLVIT(A, X, N, M)
+    !
+    ! Solve an array of symmetric positive definite 5X5 systems.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! A:
+    ! X:
+    ! N:
+    ! M:
+    !
+    REAL(RK), INTENT(IN) :: A(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(INOUT) :: X(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    INTEGER :: N
+    INTEGER :: M
+    !
+    ! Locals:
+    !
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A11
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A21
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A22
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A31
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A32
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A33
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A41
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A42
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A43
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A44
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A51
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A52
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A53
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A54
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: A55
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: X1
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: X2
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: X3
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: X4
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: X5
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: V1
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: V2
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: V3
+    REAL(RK), DIMENSION(0:(N - 1), 0:(M - 1)) :: V4
+    !
+    !---------------------------------------------------------------------------
+    !
+    A11 = A(0, 0, :, :)
+    A21 = A(1, 0, :, :)
+    A31 = A(2, 0, :, :)
+    A41 = A(3, 0, :, :)
+    A51 = A(4, 0, :, :)
+    A22 = A(1, 1, :, :)
+    A32 = A(2, 1, :, :)
+    A42 = A(3, 1, :, :)
+    A52 = A(4, 1, :, :)
+    A33 = A(2, 2, :, :)
+    A43 = A(3, 2, :, :)
+    A53 = A(4, 2, :, :)
+    A44 = A(3, 3, :, :)
+    A54 = A(4, 3, :, :)
+    A55 = A(4, 4, :, :)
+    X1 = X(0, :, :)
+    X2 = X(1, :, :)
+    X3 = X(2, :, :)
+    X4 = X(3, :, :)
+    X5 = X(4, :, :)
+    !
+    ! **  A = LDL'.
+    ! **  j = 1.
+    !
+    A21 = A21 / A11
+    A31 = A31 / A11
+    A41 = A41 / A11
+    A51 = A51 / A11
+    !
+    ! **  j = 2.
+    !
+    V1 = A21 * A11
+    A22 = A22 - A21 * V1
+    A32 = (A32 - A31 * V1) / A22
+    A42 = (A42 - A41 * V1) / A22
+    A52 = (A52 - A51 * V1) / A22
+    !
+    ! **  j = 3.
+    !
+    V1 = A31 * A11
+    V2 = A32 * A22
+    A33 = A33 - A31 * V1 - A32 * V2
+    A43 = (A43 - A41 * V1 - A42 * V2) / A33
+    A53 = (A53 - A51 * V1 - A52 * V2) / A33
+    !
+    ! **  j = 4.
+    !
+    V1 = A41 * A11
+    V2 = A42 * A22
+    V3 = A43 * A33
+    A44 = A44 - A41 * V1 - A42 * V2 - A43 * V3
+    A54 = (A54 - A51 * V1 - A52 * V2 - A53 * V3) / A44
+    !
+    ! **  j = 5.
+    !
+    V1 = A51 * A11
+    V2 = A52 * A22
+    V3 = A53 * A33
+    V4 = A54 * A44
+    A55 = A55 - A51 * V1 - A52 * V2 - A53 * V3 - A54 * V4
+    !
+    ! **  Ly=b.
+    !
+    X2 = X2 - A21 * X1
+    X3 = X3 - A31 * X1 - A32 * X2
+    X4 = X4 - A41 * X1 - A42 * X2 - A43 * X3
+    X5 = X5 - A51 * X1 - A52 * X2 - A53 * X3 - A54 * X4
+    !
+    ! **  Dz=y.
+    !
+    X1 = X1 / A11
+    X2 = X2 / A22
+    X3 = X3 / A33
+    X4 = X4 / A44
+    X5 = X5 / A55
+    !
+    ! **  L'x=z.
+    !
+    X4 = X4 - A54 * X5
+    X3 = X3 - A43 * X4 - A53 * X5
+    X2 = X2 - A32 * X3 - A42 * X4 - A52 * X5
+    X1 = X1 - A21 * X2 - A31 * X3 - A41 * X4 - A51 * X5
+    x(0, :, :) = X1
+    x(1, :, :) = X2
+    x(2, :, :) = X3
+    x(3, :, :) = X4
+    x(4, :, :) = X5
+    !
+    END SUBROUTINE SOLVIT
+    !
+    !===========================================================================
+    !
+    SUBROUTINE CHECK_DIAGONALS(STIF, NEWTON_OK, N, M)
+    !
+    ! Determine where diagonal elements are small.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! STIF:
+    ! NEWTON_OK:
+    ! N:
+    ! M:
+    !
+    REAL(RK),  INTENT(IN) :: STIF(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
+    LOGICAL, INTENT(INOUT) :: NEWTON_OK(0:(N - 1), 0:(M - 1))
+    INTEGER :: N
+    INTEGER :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    !
+    !---------------------------------------------------------------------------
+    !
+    DO I = 0, TVEC1
+        !
+        WHERE (ABS(STIF(I, I, :, :)) .LT. VTINY)
+            !
+            NEWTON_OK = .FALSE.
+            !
+        END WHERE
+        !
+    END DO
+    !
+    END SUBROUTINE CHECK_DIAGONALS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE SCALE_UP_SIGM(SIG, EPSEFF, N, M)
+    !
+    ! Rescale the stress after solution is found
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! SIG: Stress (input/output)
+    ! EPSEFF: Effective deformation rate
+    ! N: Number of grains
+    ! M: Number of elements
+    !
+    REAL(RK), INTENT(INOUT) :: SIG(0:TVEC1, 0:(N - 1), 0:(M - 1))
+    REAL(RK), INTENT(IN) :: EPSEFF(0:(N - 1), 0:(M - 1))
+    INTEGER :: N
+    INTEGER :: M
+    !
+    ! Locals:
+    !
+    INTEGER :: I
+    INTEGER :: J
+    INTEGER :: K
+    INTEGER :: NUMIND
+    INTEGER :: IPHASE
+    INTEGER, POINTER :: INDICES(:)
+    REAL(RK) :: SCALE(0:(N - 1), 0:(M - 1))
+    INTEGER :: MY_PHASE(0:(M - 1))
+    REAL(RK) :: XM_FAKE
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        !-tm
+        XM_FAKE = 0.4_RK
+        !XM_FAKE=0.02d0
+        !
+        SCALE = EPSEFF ** XM_FAKE
+        !scale = EPSEFF**CRYSTAL_PARM(0,IPHASE)
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
+        !
+        DO J = 0, (N - 1)
+            !
+            DO I = 0, TVEC1
+                !
+                SIG(I, J, INDICES) = SIG(I, J, INDICES) * SCALE(J, INDICES)
+                !
+            END DO
+            !
+        END DO
+        !
+        DEALLOCATE(INDICES)
+        !
+    END DO !NUMPHASES
+    !
+    END SUBROUTINE SCALE_UP_SIGM
+    !
+    !===========================================================================
+    !
+    SUBROUTINE COMPUTE_AVG_CRSS(CRSS, CRSS_AVG, M_EL)
+    !
+    ! Computes the average strength of the crystal slip systems
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! CRSS:
+    ! CRSS_AVG:
+    ! M_EL:
+    !
+    REAL(RK), INTENT(IN) :: CRSS(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK), INTENT(INOUT) :: CRSS_AVG(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    INTEGER, INTENT(IN) :: M_EL
+    !
+    ! Locals:
+    !
+    INTEGER, POINTER :: INDICES(:)=>NULL()
+    INTEGER :: ISLIP
+    INTEGER :: N_SLIP
+    INTEGER :: IPHASE
+    INTEGER :: NUMIND
+    INTEGER :: MY_PHASE(0:M_EL-1)
+    !
+    !---------------------------------------------------------------------------
+    !
+    MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
+    !
+    ! Goes through the total number of phases in the material
+    !
+    DO IPHASE = 1, NUMPHASES
+        !
+        ! Finds the numbers of slip systems
+        !
+        CALL CRYSTALTYPEGET(CTYPE(IPHASE))
+        !
+        N_SLIP = CTYPE(IPHASE)%NUMSLIP
+        !
+        ! Finds the indices corresponding to the current phase the loop is on
+        !
+        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
+        !
+        ! Sums up the crystal slip strengths corresponding to the given indices
+        !
+        DO ISLIP = 0, N_SLIP - 1
+            !
+            CRSS_AVG(:, INDICES + EL_SUB1) = CRSS_AVG(:, INDICES + EL_SUB1) + &
+                & CRSS(ISLIP, :, INDICES + EL_SUB1)
+            !
+        END DO
+        !
+        ! Calculates the average of these slip systems
+        !
+        CRSS_AVG(:, INDICES + EL_SUB1) = CRSS_AVG(:, INDICES + EL_SUB1) / N_SLIP
+        !
+        DEALLOCATE (INDICES)
+        !
+    END DO
+    !
+    END SUBROUTINE COMPUTE_AVG_CRSS
+    !
+END MODULE STRESS_SOLVE_VP_MOD
