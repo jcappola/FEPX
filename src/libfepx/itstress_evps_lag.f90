@@ -13,7 +13,7 @@ MODULE ItMethodEvpsModule
 
   USE READ_INPUT_MOD
   USE microstructure_mod
-  USE StiffnessEvpsModule
+  USE STIFFNESS_EVPS_MOD
   USE MATRIX_OPERATIONS_MOD
   USE CONVERGENCE_MOD, ONLY: cv_options
   USE WRITE_OUTPUT_MOD

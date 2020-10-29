@@ -37,8 +37,8 @@ file(GLOB libfepx_src
     rstarn_solve_lag.f90
     shape_2d_mod.f90
     shape_3d_mod.f90
+    stiffness_evps_mod.f90
     stiffness_vp_mod.f90
-    StiffnessEvpsModule.f90
     stress_solve_evps_mod.f90
     stress_solve_vp_mod.f90
     surface_info_mod.f90
