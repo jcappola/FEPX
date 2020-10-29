@@ -42,7 +42,7 @@ CONTAINS
     ! Call a callback function if a command line matches a command.
     !
     ! If :arg:`CMDLINE` matches the command string :arg:`command`, then
-    ! call the subroutine :arg:`callback`, which sets the value of :arg:`status`.  
+    ! call the subroutine :arg:`callback`, which sets the value of :arg:`status`
     ! Otherwise, set :arg:`match` to false.
     !
     !---------------------------------------------------------------------------
@@ -163,13 +163,16 @@ CONTAINS
             !
             IF (STATUS /= 0) THEN
                 !
-                CALL WRITEMESSAGE(STANDARD_ERROR, 'Error  :     > No match on command: '// CMDLINE)
+                CALL WRITEMESSAGE(STANDARD_ERROR, 'Error  :     > No match on &
+                    &command: '// CMDLINE)
                 !
                 MYSTATUS = LOOPSTAT_NZ; EXIT
             ELSE
                 !
-                !CALL WRITEMESSAGE(STANDARD_OUTPUT, 'processed command:  ' // CMDLINE)
-                ! Above CALL suppressed in favor of displaying commands elsewhere - JC
+                !CALL WRITEMESSAGE(STANDARD_OUTPUT, 'processed command:  ' //&
+                !   &CMDLINE)
+                ! Above CALL suppressed in favor of displaying commands
+                !   elsewhere - JC
             CYCLE
                 !
             END IF
@@ -178,7 +181,8 @@ CONTAINS
             !
             ! No match: exit
             !
-            CALL WRITEMESSAGE(STANDARD_ERROR, 'Error  :     > No match on command: '// CMDLINE)
+            CALL WRITEMESSAGE(STANDARD_ERROR, 'Error  :     > No match on &
+                &command: '// CMDLINE)
             MYSTATUS = LOOPSTAT_NOMATCH; EXIT
             !
         END IF

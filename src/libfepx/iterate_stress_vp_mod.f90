@@ -31,7 +31,7 @@ USE UNITS_MOD
 !
 ! From libparallel:
 !
-USE GATHER_SCATTER
+USE GATHER_SCATTER_MOD
 USE PARALLEL_MOD
 !
 IMPLICIT NONE
@@ -135,8 +135,10 @@ CONTAINS
         !
         IF (MYID .EQ. 0) THEN
             !
-            WRITE(DFLT_U,'(A,I0)') 'Info   :     > ITMETHOD_VP: ITERation ', ITER
-            WRITE(DFLT_U,'(A)',ADVANCE = 'NO') 'Info   :       . Solving NL ITERation... '
+            WRITE(DFLT_U,'(A,I0)') 'Info   :     > ITMETHOD_VP: Iteration ', &
+                & ITER
+            WRITE(DFLT_U,'(A)',ADVANCE = 'NO') 'Info   :       . Solving NL &
+                &iteration... '
             !
         END IF
         !
