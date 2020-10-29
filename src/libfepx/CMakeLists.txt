@@ -31,7 +31,7 @@ file(GLOB libfepx_src
     microstructure.f90
     orientation_conversion_mod.f90
     parallel_matrix_mod.f90
-    poly_response_evps_lag.f90
+    polycrystal_response_evps_mod.f90
     quadrature.f90
     read_input_mod.f90
     rstarn_solve_lag.f90
