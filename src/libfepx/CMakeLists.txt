@@ -28,13 +28,13 @@ file(GLOB libfepx_src
     material_matrix_evps_mod.f90
     material_matrix_vp_mod.f90
     matrix_operations_mod.f90
-    microstructure.f90
+    microstructure_mod.f90
     orientation_conversion_mod.f90
     parallel_matrix_mod.f90
     polycrystal_response_evps_mod.f90
-    quadrature.f90
+    quadrature_mod.f90
     read_input_mod.f90
-    rstarn_solve_lag.f90
+    rstarn_solve_mod.f90
     shape_2d_mod.f90
     shape_3d_mod.f90
     stiffness_evps_mod.f90
@@ -44,7 +44,7 @@ file(GLOB libfepx_src
     surface_info_mod.f90
     surface_mod.f90
     tensor_3d_mod.f90
-    units.f90
+    units_mod.f90
     write_output_mod.f90
     )
 

@@ -2,7 +2,7 @@
 ! Copyright (C) 1996-2020, DPLab, ACME Lab.
 ! See the COPYING file in the top-level directory.
 !
-MODULE RSTARN_SOLVE_LAG_MOD
+MODULE RSTARN_SOLVE_MOD
 !
 ! Module to update the orientations (rstar).
 !
@@ -715,4 +715,4 @@ CONTAINS
     !      
     END SUBROUTINE GET_C
     !
-END MODULE RSTARN_SOLVE_LAG_MOD   
+END MODULE RSTARN_SOLVE_MOD   
