@@ -6,11 +6,9 @@ message(STATUS "Preparing library: libf95")
 
 file(GLOB libf95_src
     command_mod.f90
-    constants_mod.f90
     files_mod.f90
     intrinsic_types_mod.f90
     libf95.f90
-    optimization_mod.f90
     strings_mod.f90
     timer_mod.f90
     )

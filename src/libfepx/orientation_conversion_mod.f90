@@ -35,7 +35,6 @@ MODULE ORIENTATION_CONVERSION_MOD
 !
 ! From libf95:
 !
-USE CONSTANTS_MOD, ONLY: RK_PI, RK_PI_OVER_180
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND
 !
 ! From libfepx:
@@ -47,6 +46,11 @@ IMPLICIT NONE
 ! Public
 !
 PUBLIC
+!
+! Private
+!
+REAL(RK), PARAMETER, PRIVATE :: PI = 4.0D0 * DATAN(1.0D0)
+REAL(RK), PARAMETER, PRIVATE :: PI_OVER_180 = PI / 180.0D0
 !
 CONTAINS
     !
@@ -91,7 +95,7 @@ CONTAINS
                 COM = 0.0D0
                 SOM = 0.0D0
                 !
-                ANGLERAD = ANGLE(I, J) * RK_PI_OVER_180
+                ANGLERAD = ANGLE(I, J) * PI_OVER_180
                 COM = COS(ANGLERAD)
                 SOM = SIN(ANGLERAD)
                 !
@@ -179,9 +183,9 @@ CONTAINS
         !
         ! Convert from degrees to radians
         !
-        PSI1RAD = PSI1 * RK_PI_OVER_180
-        PHIRAD = PHI * RK_PI_OVER_180
-        PSI2RAD = PSI2 * RK_PI_OVER_180
+        PSI1RAD = PSI1 * PI_OVER_180
+        PHIRAD = PHI * PI_OVER_180
+        PSI2RAD = PSI2 * PI_OVER_180
         !
         SPS1 = SIN(PSI1RAD)
         CPS1 = COS(PSI1RAD)
@@ -279,9 +283,9 @@ CONTAINS
         !
         ! Convert from degrees to radians
         !
-        PSIRAD = PSI * RK_PI_OVER_180
-        THERAD = THE * RK_PI_OVER_180
-        PHIRAD = PHI * RK_PI_OVER_180
+        PSIRAD = PSI * PI_OVER_180
+        THERAD = THE * PI_OVER_180
+        PHIRAD = PHI * PI_OVER_180
         !
         SPS = SIN(PSIRAD)
         CPS = COS(PSIRAD)
@@ -507,7 +511,7 @@ CONTAINS
                         !
                     ELSEIF (Q0 .EQ. 0.0D0) THEN
                         !
-                        ANGLE(I, J) = RK_PI
+                        ANGLE(I, J) = PI
                         AXIS(0, I, J) = Q1
                         AXIS(1, I, J) = Q2
                         AXIS(2, I, J) = Q3
@@ -524,7 +528,7 @@ CONTAINS
                 !
                 ! Convert from radians to degrees
                 !
-                ANGLE(I, J) = ANGLE(I, J) / RK_PI_OVER_180
+                ANGLE(I, J) = ANGLE(I, J) / PI_OVER_180
                 !
             ENDDO
             !
@@ -576,16 +580,16 @@ CONTAINS
         ELSEWHERE
             !
             PSI1 = ATAN2(R(0, 1, :, :), R(0, 0, :, :))
-            PHI = (RK_PI/2.0D0) * (1.0D0 - R(2, 2, :, :))
+            PHI = (PI / 2.0D0) * (1.0D0 - R(2, 2, :, :))
             PSI2 = 0.0D0
             !
         ENDWHERE
         !
         ! Convert from radians to degrees
         !
-        PSI1 = PSI1 / RK_PI_OVER_180
-        PHI = PHI / RK_PI_OVER_180
-        PSI2 = PSI2 / RK_PI_OVER_180
+        PSI1 = PSI1 / PI_OVER_180
+        PHI = PHI / PI_OVER_180
+        PSI2 = PSI2 / PI_OVER_180
         !
     END SUBROUTINE ROT_MATS_TO_EULER_BUNGE
     !
@@ -640,9 +644,9 @@ CONTAINS
         !
         ! Convert from radians to degrees
         !
-        PSI = PSI / RK_PI_OVER_180
-        THE = THE / RK_PI_OVER_180
-        PHI = PHI / RK_PI_OVER_180
+        PSI = PSI / PI_OVER_180
+        THE = THE / PI_OVER_180
+        PHI = PHI / PI_OVER_180
         !
     END SUBROUTINE ROT_MATS_TO_EULER_KOCKS
     !
