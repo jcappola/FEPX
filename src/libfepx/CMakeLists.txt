@@ -30,7 +30,6 @@ file(GLOB libfepx_src
     matrix_operations_mod.f90
     microstructure_mod.f90
     orientation_conversion_mod.f90
-    parallel_matrix_mod.f90
     polycrystal_response_evps_mod.f90
     quadrature_mod.f90
     read_input_mod.f90
