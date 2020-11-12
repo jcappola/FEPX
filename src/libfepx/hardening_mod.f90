@@ -330,6 +330,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ACTIVE_SHRATE(:,:) = 0.0D0
+    SHEAR_CRIT = 0.0D0
     N_LT0 = 0
     !
     DO IPHASE = 1, NUMPHASES
@@ -364,7 +365,7 @@ CONTAINS
             !
             N_GT1 = COUNT((DABS(SHEAR_CRIT) .GE. 1.0D0))
             !print *, 'Number greater than 1: ', N_GT1
-            CALL par_quit('Error  :     > `SHEAR_CRIT` is greater than 1.')
+            CALL PAR_QUIT('Error  :     > `SHEAR_CRIT` is greater than 1.')
             !
         END IF
         !
