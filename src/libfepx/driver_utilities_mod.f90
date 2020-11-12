@@ -123,16 +123,16 @@ CONTAINS
     ! Needs to be defined - JC
     !
     REAL(RK), POINTER :: E_ELAS_VEC_DEV_TMP(:,:,:) => NULL()
-    REAL(RK)  ::  E_ELAS_VEC_DEV(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  E_ELAS_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  ELAS_T3X3(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  V_TENSOR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  DETERM_V(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  SIG_SM(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_AVG(0:TVEC1,  EL_SUB1:EL_SUP1)
-    REAL(RK)  ::  S_AVG_KK(EL_SUB1:EL_SUP1)
+    REAL(RK) :: E_ELAS_VEC_DEV(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: E_ELAS_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_KK_GRN(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: ELAS_T3X3(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: V_TENSOR(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: DETERM_V(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: QR5X5(0:TVEC1, 0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SIG_SM(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_AVG(0:TVEC1,  EL_SUB1:EL_SUP1)
+    REAL(RK) :: S_AVG_KK(EL_SUB1:EL_SUP1)
     REAL(RK), ALLOCATABLE :: SIG_AVG_ALL(:)
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
     INTEGER :: M_EL, EL_DOF_MIN, EL_DOF_MAX, IDOF, I, J, K
@@ -200,9 +200,9 @@ CONTAINS
     !
     ! Elastic strain tensor: deviatoric + volumetric
     !
-    ELAS_T3X3(0,0,:,:) = ELAS_T3X3(0,0,:,:) + E_ELAS_KK_GRN/3.0_RK
-    ELAS_T3X3(1,1,:,:) = ELAS_T3X3(1,1,:,:) + E_ELAS_KK_GRN/3.0_RK
-    ELAS_T3X3(2,2,:,:) = ELAS_T3X3(2,2,:,:) + E_ELAS_KK_GRN/3.0_RK
+    ELAS_T3X3(0,0,:,:) = ELAS_T3X3(0,0,:,:) + E_ELAS_KK_GRN / 3.0D0
+    ELAS_T3X3(1,1,:,:) = ELAS_T3X3(1,1,:,:) + E_ELAS_KK_GRN / 3.0D0
+    ELAS_T3X3(2,2,:,:) = ELAS_T3X3(2,2,:,:) + E_ELAS_KK_GRN / 3.0D0
     !
     ! Elastic strain tensor in 6-vec format
     !
@@ -220,7 +220,7 @@ CONTAINS
     !
     DO I = 0, DIMS1
         !
-        V_TENSOR(I, I, :, :) = ELAS_T3X3(I, I, :, :) + 1.0_RK
+        V_TENSOR(I, I, :, :) = ELAS_T3X3(I, I, :, :) + 1.0D0
         !
     END DO
     !
@@ -261,8 +261,8 @@ CONTAINS
     !
     ! Average Cauchy stress (sample COORDS)
     !
-    S_AVG = 0.0_RK
-    S_AVG_KK = 0.0_RK
+    S_AVG = 0.0D0
+    S_AVG_KK = 0.0D0
     !
     ! Get weighted average
     !
@@ -282,9 +282,9 @@ CONTAINS
     !
     ! Total stress tensor: deviatoric + volumetric
     !
-    S_AVG_3X3(0,0,:) = S_AVG_3X3(0,0,:) + S_AVG_KK/3.0_RK
-    S_AVG_3X3(1,1,:) = S_AVG_3X3(1,1,:) + S_AVG_KK/3.0_RK
-    S_AVG_3X3(2,2,:) = S_AVG_3X3(2,2,:) + S_AVG_KK/3.0_RK
+    S_AVG_3X3(0,0,:) = S_AVG_3X3(0,0,:) + S_AVG_KK / 3.0D0
+    S_AVG_3X3(1,1,:) = S_AVG_3X3(1,1,:) + S_AVG_KK / 3.0D0
+    S_AVG_3X3(2,2,:) = S_AVG_3X3(2,2,:) + S_AVG_KK / 3.0D0
     !
     ! Update surface information.
     !
@@ -328,7 +328,8 @@ CONTAINS
     ! E_AVG:
     ! NU_AVG:
     !
-    REAL(RK), INTENT(OUT) :: E_avg, nu_avg
+    REAL(RK), INTENT(OUT) :: E_AVG
+    REAL(RK), INTENT(OUT) :: NU_AVG
     !
     ! Locals:
     ! MY_PHASE:
@@ -343,23 +344,33 @@ CONTAINS
     ! F, G, H:
     !
     INTEGER :: MY_PHASE(EL_SUB1:EL_SUP1)
-    INTEGER :: i, IPHASE
-    REAL(RK) :: part_numel_phase, numel_phase
-    REAL(RK) :: phase_frac
-    REAL(RK) :: K_phase, E_phase, nu_phase
-    REAL(RK) :: c11, c12, c13, c33, c44, c66
-    REAL(RK) :: F, G, H
+    INTEGER :: I, IPHASE
+    REAL(RK) :: PART_NUMEL_PHASE
+    REAL(RK) :: NUMEL_PHASE
+    REAL(RK) :: PHASE_FRAC
+    REAL(RK) :: K_PHASE
+    REAL(RK) :: E_PHASE
+    REAL(RK) :: NU_PHASE
+    REAL(RK) :: C11
+    REAL(RK) :: C12
+    REAL(RK) :: C13
+    REAL(RK) :: C33
+    REAL(RK) :: C44
+    REAL(RK) :: C66
+    REAL(RK) :: F
+    REAL(RK) :: G
+    REAL(RK) :: H
     !      
     !---------------------------------------------------------------------------
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
     !
-    E_AVG = 0.0
-    NU_AVG = 0.0
+    E_AVG = 0.0D0
+    NU_AVG = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
-        PART_NUMEL_PHASE = 0.0_RK
+        PART_NUMEL_PHASE = 0.0D0
         !        
         DO I = EL_SUB1, EL_SUP1
             !
@@ -372,7 +383,7 @@ CONTAINS
         END DO
         !
         CALL PAR_SUM(PART_NUMEL_PHASE, NUMEL_PHASE)
-        PHASE_FRAC = NUMEL_PHASE/REAL(NUMELM, RK) 
+        PHASE_FRAC = NUMEL_PHASE / REAL(NUMELM, RK)
         !
         IF ((IPHASE .EQ. 1) .OR. (IPHASE .EQ. 2)) THEN
             !
@@ -406,10 +417,10 @@ CONTAINS
         END IF
         !
         K_PHASE = CRYSTAL_PARM(8, IPHASE)
-        NU_PHASE = (3*K_PHASE-E_PHASE)/(6*K_PHASE)
+        NU_PHASE = (3 * K_PHASE - E_PHASE)/(6 * K_PHASE)
         !
-        E_AVG = E_AVG + PHASE_FRAC*E_PHASE
-        NU_AVG = NU_AVG + PHASE_FRAC*NU_PHASE
+        E_AVG = E_AVG + PHASE_FRAC * E_PHASE
+        NU_AVG = NU_AVG + PHASE_FRAC * NU_PHASE
         !
     END DO
     !
@@ -473,7 +484,7 @@ CONTAINS
          & INV(3, 1) + INV(3, 2) + INV(3, 3))
     COND = MATNORM * INVNORM
     !
-    IF (COND .GT. 1e3) THEN
+    IF (COND .GT. 1.0D3) THEN
         !
         CALL PAR_QUIT('Error  :     > Matrix is poorly conditioned.')
         !
@@ -558,8 +569,8 @@ CONTAINS
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
     !
-    SQR2  = SQRT(2.0_RK)
-    SQR32 = SQRT(1.5_RK)
+    SQR2  = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
     !
     ! COORDS --> ECOORDS [30 x m]
     ! velocity --> EVEL  [30 x m]
@@ -569,9 +580,9 @@ CONTAINS
     !
     ! Coordinates in the parent element
     !
-    LOC0 = 0.25_RK
-    LOC1 = 0.25_RK
-    LOC2 = 0.25_RK
+    LOC0 = 0.25D0
+    LOC1 = 0.25D0
+    LOC2 = 0.25D0
     !
     ! Initialize state variables at centroid
     !
@@ -712,23 +723,23 @@ CONTAINS
     REAL(RK) :: EVEL(0:KDIM1, EL_SUB1:EL_SUP1)
     REAL(RK) :: SQR2, SQR32
     REAL(RK) :: ALPHA(TVEC), ELAPSED
-    REAL(RK) ::  D_VEC_Q(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  W_VEC_Q(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  C_ANGS_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  RSTAR_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_VEC_N_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_BAR_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  CRSS_Q(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_ELAS_KK_BAR_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  E_ELAS_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SIG_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  DEFF_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  DEFF_G(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  D_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
-    REAL(RK) ::  SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
-    REAL(RK) ::  WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: D_VEC_Q(0:TVEC1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: W_VEC_Q(0:DIMS1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: C_ANGS_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: RSTAR_Q(0:DIMS1, 0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_VEC_N_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_BAR_VEC_Q(0:TVEC1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: CRSS_Q(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_ELAS_KK_BAR_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: E_ELAS_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SIG_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: DEFF_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: DEFF_G(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: D_KK_Q(EL_SUB1:EL_SUP1, 0:NQPT1)
+    REAL(RK) :: SHEAR(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: SHRATE(0:NGRAIN1, EL_SUB1:EL_SUP1)
+    REAL(RK) :: WP_SS(0:DIMS1, 0:NGRAIN1, EL_SUB1:EL_SUP1)
     INTEGER :: E1, E2, M, IPHASE, NUMIND
     INTEGER, POINTER :: INDICES(:) => NULL()
     INTEGER :: MY_PHASE(0:(EL_SUP1-EL_SUB1))
@@ -739,8 +750,8 @@ CONTAINS
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
     !
-    SQR2  = SQRT(2.0_RK)
-    SQR32 = SQRT(1.5_RK)
+    SQR2  = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
     !
     ! Compute coordinates @(t+dt) using the velocity @(t+dt)
     !
@@ -861,9 +872,9 @@ CONTAINS
     !
     ! Coordinates in the parent element
     !
-    LOC0 = 0.25_RK
-    LOC1 = 0.25_RK
-    LOC2 = 0.25_RK
+    LOC0 = 0.25D0
+    LOC1 = 0.25D0
+    LOC2 = 0.25D0
     !
     ! Initialize state variables at centroid
     !
@@ -958,10 +969,10 @@ CONTAINS
     ! Fix STIF & FE to be used for stress post-processing.
     !
     ALPHA(1) = SQR2
-    ALPHA(2) = 1.0_RK / SQR32
-    ALPHA(3) = 1.0_RK / SQR2
-    ALPHA(4) = 1.0_RK / SQR2
-    ALPHA(5) = 1.0_RK / SQR2
+    ALPHA(2) = 1.0D0 / SQR32
+    ALPHA(3) = 1.0D0 / SQR2
+    ALPHA(4) = 1.0D0 / SQR2
+    ALPHA(5) = 1.0D0 / SQR2
     !
     DO J = 1, TVEC
         !

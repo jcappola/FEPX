@@ -73,7 +73,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    AREA0 = 0.0_RK
+    AREA0 = 0.0D0
     !
     DO I = 1, NSURFACES
         !
@@ -82,11 +82,11 @@ CONTAINS
         !
         ! Now compute normal vectors at quadrature points
         !
-        P_AREA = 0.0_RK
+        P_AREA = 0.0D0
         !
         DO IEL = SURFACES(I)%SEMIN, SURFACES(I)%SEMAX
             !
-            TANGENT = 0.0_RK
+            TANGENT = 0.0D0
             !
             DO JQ = 1, NQP2D
                 !
@@ -223,8 +223,8 @@ CONTAINS
     !
     ! write(UNIT,*) 'Updating surface info.'
     !
-    LOAD_OUT = 0.0_RK
-    AREA_OUT = 0.0_RK
+    LOAD_OUT = 0.0D0
+    AREA_OUT = 0.0D0
     !    
     !
     DO I = 1, NSURFACES
@@ -238,12 +238,12 @@ CONTAINS
         !
         ! Now compute normal vectors at quadrature points.
         !
-        P_TOTAL_LOAD = 0.0_RK
-        P_AREA = 0.0_RK
+        P_TOTAL_LOAD = 0.0D0
+        P_AREA = 0.0D0
         !
         DO IEL = SURFACES(I)%SEMIN, SURFACES(I)%SEMAX
             !
-            TANGENT = 0.0_RK
+            TANGENT = 0.0D0
             !
             DO JQ = 1, NQP2D
                 !

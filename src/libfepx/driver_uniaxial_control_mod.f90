@@ -209,9 +209,9 @@ CONTAINS
         !
         ! Initialize areas and load arrays
         !
-        LOAD=0.0_RK
-        AREA=0.0_RK
-        AREA0=0.0_RK
+        LOAD=0.0D0
+        AREA=0.0D0
+        AREA0=0.0D0
         !
         ! Compute initial area (AREA0)
         !
@@ -225,10 +225,10 @@ CONTAINS
         !
         ! Initialize state
         !
-        E_ELAS_KK_BAR_Q = 0.0_RK
-        SIG_VEC_N_Q = 0.0_RK
-        E_ELAS_KK_BAR = 0.0_RK
-        SIG_VEC_N = 0.0_RK
+        E_ELAS_KK_BAR_Q = 0.0D0
+        SIG_VEC_N_Q = 0.0D0
+        E_ELAS_KK_BAR = 0.0D0
+        SIG_VEC_N = 0.0D0
         C_ANGS = C0_ANGS
         !
         ! Initialize elvol array (and associated) iff it needs to be printed
@@ -239,20 +239,20 @@ CONTAINS
             ALLOCATE(ELVOL(EL_SUB1:EL_SUP1))
             ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-            ELVOL = 0.0_RK
+            ELVOL = 0.0D0
             !
         END IF
         !
         ! Initialize integrated quantities
         !
-        EQSTRAIN = 0.0_RK
-        EQPLSTRAIN = 0.0_RK
-        GAMMA = 0.0_RK
+        EQSTRAIN = 0.0D0
+        EQPLSTRAIN = 0.0D0
+        GAMMA = 0.0D0
         !
         ! Initialize deformation control
         !
         INCR = 0
-        TIME = 0.0_RK
+        TIME = 0.0D0
         DTIME_N = GET_INITIAL_DTIME()
         !
     END IF
@@ -300,7 +300,7 @@ CONTAINS
         !
         ! Initialize shear rates
         !
-        GAMMADOT = 0.0_RK
+        GAMMADOT = 0.0D0
         !
         CONVERGED_SOLUTION = .TRUE.
         !
@@ -369,8 +369,8 @@ CONTAINS
         !
         IF((GET_VEL_FACTOR() .EQ. -1) .AND. (NTSTEPS .EQ. 0)) THEN
             !
-            GACCUMSHEAR = 0.0_RK
-            ACCUMSHEAR_CEN = 0.0_RK
+            GACCUMSHEAR = 0.0D0
+            ACCUMSHEAR_CEN = 0.0D0
             !
         END IF
         !
@@ -445,7 +445,7 @@ CONTAINS
             !
             IF (PRINT_OPTIONS%PRINT_FORCES) THEN
                 !
-                IDUMMY = 0.0_RK
+                IDUMMY = 0.0D0
                 CALL WRITE_FORCE_FILE_DATA(1, ISTEP, INCR, &
                     & LOAD, AREA, TIME, IDUMMY)
                 !
@@ -668,7 +668,7 @@ CONTAINS
         NSTEPS = UNIAXIAL_OPTIONS%NUMBER_OF_LOAD_STEPS
         TARGET_SURFACE = BCS_OPTIONS%LOADING_FACE
         USER_STRAIN_RATE = BCS_OPTIONS%STRAIN_RATE
-        DIFF_STRESS = 0.0_RK
+        DIFF_STRESS = 0.0D0
         !
         ! Allocate the arrays for the load target sequence.
         !
@@ -765,13 +765,13 @@ CONTAINS
                 !
                 DIFF_STRESS = (UNIAXIAL_OPTIONS%TARGET_LOAD(I,1))
                 !
-                IF (DIFF_STRESS .GT. 0.0_RK) THEN
+                IF (DIFF_STRESS .GT. 0.0D0) THEN
                     !
                     IS_SIGNED(I)   = .FALSE.
                     TARGET_SIGN(I) = 1
                     !VEL_FACTOR(I)  = 1
                     !
-                ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+                ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                     !
                     IS_SIGNED(I) = .TRUE.
                     TARGET_SIGN(I) = -1
@@ -805,12 +805,12 @@ CONTAINS
                 DIFF_STRESS = (UNIAXIAL_OPTIONS%TARGET_LOAD(I,1)) &
                     & - (UNIAXIAL_OPTIONS%TARGET_LOAD(I-1,1))
                 !
-                IF (DIFF_STRESS .GT. 0.0_RK) THEN
+                IF (DIFF_STRESS .GT. 0.0D0) THEN
                     !
                     IS_SIGNED(I)   = .FALSE.
                     TARGET_SIGN(I) = 1
                     !
-                ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+                ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                     !                
                     IS_SIGNED(I) = .TRUE.
                     TARGET_SIGN(I) = -1
@@ -851,7 +851,7 @@ CONTAINS
         NSTEPS = UNIAXIAL_OPTIONS%NUMBER_OF_STRAIN_STEPS
         TARGET_SURFACE = BCS_OPTIONS%LOADING_FACE
         USER_STRAIN_RATE = BCS_OPTIONS%STRAIN_RATE
-        DIFF_STRAIN = 0.0_RK
+        DIFF_STRAIN = 0.0D0
         !
         ! Allocate the arrays for the strain target sequence.
         !
@@ -946,11 +946,11 @@ CONTAINS
                 !
                 DIFF_STRAIN = (UNIAXIAL_OPTIONS%TARGET_STRAIN(I,1))
                 !
-                IF (DIFF_STRAIN .GT. 0.0_RK) THEN
+                IF (DIFF_STRAIN .GT. 0.0D0) THEN
                     !
                     IS_SIGNED(I) = .FALSE.
                     !
-                ELSE IF (DIFF_STRAIN .LT. 0.0_RK) THEN
+                ELSE IF (DIFF_STRAIN .LT. 0.0D0) THEN
                     !
                     IS_SIGNED(I) = .TRUE.
                     VELOCITY = VELOCITY * (-1) ! Sign the entire velocity field.
@@ -988,11 +988,11 @@ CONTAINS
                 DIFF_STRAIN = (UNIAXIAL_OPTIONS%TARGET_STRAIN(I,1)) &
                     & - (UNIAXIAL_OPTIONS%TARGET_STRAIN(I-1,1)) 
                 !
-                IF (DIFF_STRAIN .GT. 0.0_RK) THEN
+                IF (DIFF_STRAIN .GT. 0.0D0) THEN
                     !
                     IS_SIGNED(I) = .FALSE.
                     !
-                ELSE IF (DIFF_STRAIN .LT. 0.0_RK) THEN
+                ELSE IF (DIFF_STRAIN .LT. 0.0D0) THEN
                     !
                     IS_SIGNED(I) = .TRUE.
                     !
@@ -1470,7 +1470,7 @@ CONTAINS
             !LEGACY NOTE: -TM. FROM DONALD'S VERSION:
             DELTA_LOAD = TRIAL_LOAD (INDEX) - CURRENT_LOAD(INDEX)
             !            
-            IF (ABS(DELTA_LOAD) < 1.0E-16) THEN
+            IF (ABS(DELTA_LOAD) < 1.0D-16) THEN
                 !
                 DTIME_OLD = DELTA_T;
                 !

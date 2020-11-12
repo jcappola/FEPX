@@ -15,7 +15,7 @@ MODULE HARDENING_MOD
 !
 ! From libf95:
 !
-USE LIBF95, ONLY: RK=>REAL_KIND, RK_ONE, RK_ZERO
+USE LIBF95, ONLY: RK=>REAL_KIND
 !
 ! From libfepx:
 !
@@ -106,21 +106,21 @@ CONTAINS
     ! RC: Initialize these to zero or else the terms that are not used in a dual
     !   phase material get assigned random values.
     !
-    FUNC = RK_ZERO
-    DFUNC = RK_ZERO
+    FUNC = 0.0D0
+    DFUNC = 0.0D0
     !
     ! RC: In future updates this will need to be set up such that it makes a
     !   CALL for either a isotropic case or latent hardening case
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
     !
-    MYSIGN = RK_ONE
+    MYSIGN = 1.0D0
     !
     DO ISLIP=0,MAXSLIP1
         !
-        WHERE((CRSS_SAT - CRSS(ISLIP,:,:)) .LE. RK_ZERO)
+        WHERE((CRSS_SAT - CRSS(ISLIP,:,:)) .LE. 0.0D0)
             !
-            MYSIGN(ISLIP,:,:) = RK_ZERO
+            MYSIGN(ISLIP,:,:) = 0.0D0
             !
         END WHERE
         !
@@ -325,11 +325,11 @@ CONTAINS
     REAL(RK) :: C10
     REAL(RK) :: SHR_MAX(0:(N - 1), 0:(M - 1))
     REAL(RK) :: SHR_MIN(0:(N - 1), 0:(M - 1))
-    REAL(RK), PARAMETER :: MACH_EPS = 2.22E-16
+    REAL(RK), PARAMETER :: MACH_EPS = 2.22D-16
     !
     !---------------------------------------------------------------------------
     !
-    ACTIVE_SHRATE(:,:) = 0.0_RK
+    ACTIVE_SHRATE(:,:) = 0.0D0
     N_LT0 = 0
     !
     DO IPHASE = 1, NUMPHASES
@@ -355,14 +355,14 @@ CONTAINS
         !
         WHERE(SHEAR_CRIT(:, INDICES) .LT. MACH_EPS)
             !
-            SHEAR_CRIT(:, INDICES) = 0.0_RK
+            SHEAR_CRIT(:, INDICES) = 0.0D0
             !N_LT0 = N_LT0 + 1
             !
         END WHERE
         !
-        IF (ANY(DABS(SHEAR_CRIT) .GE. 1.0)) THEN
+        IF (ANY(DABS(SHEAR_CRIT) .GE. 1.0D0)) THEN
             !
-            N_GT1 = COUNT((DABS(SHEAR_CRIT) .GE. 1.0))
+            N_GT1 = COUNT((DABS(SHEAR_CRIT) .GE. 1.0D0))
             !print *, 'Number greater than 1: ', N_GT1
             CALL par_quit('Error  :     > `SHEAR_CRIT` is greater than 1.')
             !
@@ -380,8 +380,8 @@ CONTAINS
             !
         END DO
         !
-        SHR_MIN = 1.0E-6 * EPSEFF
-        SHR_MAX = 1.0E1 * EPSEFF
+        SHR_MIN = 1.0D-6 * EPSEFF
+        SHR_MAX = 1.0D1 * EPSEFF
         !
         WHERE (ACTIVE_SHRATE .LE. SHR_MIN)
             !
@@ -496,7 +496,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    SHRATE = RK_ZERO
+    SHRATE = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -591,7 +591,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    ONES = RK_ONE
+    ONES = 1.0D0
     !
     SELECT CASE(XTYPE) ! Values are hard wired
     !

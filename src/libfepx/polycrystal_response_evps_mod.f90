@@ -516,7 +516,7 @@ CONTAINS
         !
         WHERE (MY_PHASE .EQ. IPHASE)
             !
-            SIG_KK = 3.0_RK * CRYSTAL_PARM(8,IPHASE) * E_ELAS_KK
+            SIG_KK = 3.0D0 * CRYSTAL_PARM(8,IPHASE) * E_ELAS_KK
             !
         END WHERE
         !
@@ -946,7 +946,7 @@ CONTAINS
         !
         WHERE (MY_PHASE .EQ. IPHASE)
             !
-            SIG_KK = 3.0_RK * CRYSTAL_PARM(8,IPHASE) * E_ELAS_KK
+            SIG_KK = 3.0D0 * CRYSTAL_PARM(8,IPHASE) * E_ELAS_KK
             !
         END WHERE
         !

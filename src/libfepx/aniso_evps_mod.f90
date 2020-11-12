@@ -104,15 +104,15 @@ CONTAINS
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
     !
-    TAN_STIF_EVP = 0.0_RK
-    C_TAN = 0.0_RK
+    TAN_STIF_EVP = 0.0D0
+    C_TAN = 0.0D0
     !
     ! Initialize factors to correct [c] & {f}
     !
-    SQR2  = DSQRT(2.0_RK)
-    SQR32 = DSQRT(1.5_RK)
+    SQR2  = DSQRT(2.0D0)
+    SQR32 = DSQRT(1.5D0)
     !
-    ALPHA(1) = 1.0_RK / SQR2
+    ALPHA(1) = 1.0D0 / SQR2
     ALPHA(2) = SQR32
     ALPHA(3) = SQR2
     ALPHA(4) = SQR2
@@ -176,7 +176,7 @@ CONTAINS
     ! Compute elasto-visco-plastic crystal stiffness and 
     !   visco-plastic crystal compliance.
     !
-    TAN_STIF_VP = 0.0_RK
+    TAN_STIF_VP = 0.0D0
     !
     DTIMEI = 1. / DTIME
     !
@@ -198,7 +198,7 @@ CONTAINS
             !
             WHERE (ABS(RSS(ISLIP,:,INDICES)) .LT. T_MIN(IPHASE))
                 !
-                RSS(ISLIP,:,INDICES) = 0.0_RK
+                RSS(ISLIP,:,INDICES) = 0.0D0
                 !
             ENDWHERE
             !
@@ -326,7 +326,7 @@ CONTAINS
     ! Spread keinv to all crystals and transform it to sample axes.  
     ! deb - 6/11/2000
     !
-    keinv_all = 0.0_RK
+    keinv_all = 0.0D0
     !
     ! In order to remove one dimension from my_phase (the dimension over
     ! `ngrain'), we add a loop over that dimension here. - hritz 9/15/05
@@ -523,7 +523,7 @@ CONTAINS
     WP_HAT(2, :, :) = W_VEC_GRN(2, :, :) + 0.5 / &
         & DT * (EE(2, 1, :, :) - EE(1, 2, :, :))
     !
-    DP_HAT = 0.0_RK
+    DP_HAT = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !

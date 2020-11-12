@@ -110,13 +110,13 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    PCNST = 0.0_RK
-    MMTX = 0.0_RK
-    PSCALE = 0.0_RK
+    PCNST = 0.0D0
+    MMTX = 0.0D0
+    PSCALE = 0.0D0
     !
-    LOC0 = 0.25_RK
-    LOC1 = 0.25_RK
-    LOC2 = 0.25_RK
+    LOC0 = 0.25D0
+    LOC1 = 0.25D0
+    LOC2 = 0.25D0
     !
     CALL SFDER_HPAR(LOC0, LOC1, LOC2, GCOORDS, DNDX, DNDY, DNDZ, DET, S11, &
         & S12, S13, S21, S22, S23, S31, S32, S33)
@@ -124,7 +124,7 @@ CONTAINS
     CALL MATERIAL_MATRIX_VP(ITYPE, c, DNDX, DNDY, DNDZ, GVEL, SCLFAC, QR5X5, &
         & WTS, EPSEFF, DTIME, INCR)
     !
-    T11 = 0.0_RK
+    T11 = 0.0D0
     !
     DO IQPT = 0, NQPT1
         !
@@ -153,21 +153,21 @@ CONTAINS
             !
             XNI(1, 1, :) = DNDX(I, :)
             XNI(2, 1, :) = -DNDY(I, :)
-            XNI(3, 1, :) = 0.0_RK
-            XNI(1, 2, :) = -DNDX(I, :) / 3.0_RK
-            XNI(2, 2, :) = -DNDY(I, :) / 3.0_RK
-            XNI(3, 2, :) = 2.0_RK * DNDZ(I, :) / 3.0_RK
-            XNI(1, 3, :) = 0.5_RK * DNDY(I, :)
-            XNI(2, 3, :) = 0.5_RK * DNDX(I, :)
-            XNI(3, 3, :) = 0.0_RK
-            XNI(1, 4, :) = 0.5_RK * DNDZ(I, :)
-            XNI(2, 4, :) = 0.0_RK
-            XNI(3, 4, :) = 0.5_RK * DNDX(I, :)
-            XNI(1, 5, :) = 0.0_RK
-            XNI(2, 5, :) = 0.5_RK * DNDZ(I, :)
-            XNI(3, 5, :) = 0.5_RK * DNDY(I, :)
+            XNI(3, 1, :) = 0.0D0
+            XNI(1, 2, :) = -DNDX(I, :) / 3.0D0
+            XNI(2, 2, :) = -DNDY(I, :) / 3.0D0
+            XNI(3, 2, :) = 2.0D0 * DNDZ(I, :) / 3.0D0
+            XNI(1, 3, :) = 0.5D0 * DNDY(I, :)
+            XNI(2, 3, :) = 0.5D0 * DNDX(I, :)
+            XNI(3, 3, :) = 0.0D0
+            XNI(1, 4, :) = 0.5D0 * DNDZ(I, :)
+            XNI(2, 4, :) = 0.0D0
+            XNI(3, 4, :) = 0.5D0 * DNDX(I, :)
+            XNI(1, 5, :) = 0.0D0
+            XNI(2, 5, :) = 0.5D0 * DNDZ(I, :)
+            XNI(3, 5, :) = 0.5D0 * DNDY(I, :)
             !
-            TEMP1 = 0.0_RK
+            TEMP1 = 0.0D0
             !
             CALL GEN_MATRIX_MULT(TEMP1, XNI, C, 1, 2, IER)
             !
@@ -179,21 +179,21 @@ CONTAINS
                 !
                 XNJ(1, 1, :) = DNDX(J, :)
                 XNJ(1, 2, :) = -DNDY(J, :)
-                XNJ(1, 3, :) = 0.0_RK
-                XNJ(2, 1, :) = -DNDX(J, :) / 3.0_RK
-                XNJ(2, 2, :) = -DNDY(J, :) / 3.0_RK
-                XNJ(2, 3, :) = 2.0_RK * DNDZ(J, :) / 3.0_RK
-                XNJ(3, 1, :) = 0.5_RK * DNDY(J, :)
-                XNJ(3, 2, :) = 0.5_RK * DNDX(J, :)
-                XNJ(3, 3, :) = 0.0_RK
-                XNJ(4, 1, :) = 0.5_RK * DNDZ(J, :)
-                XNJ(4, 2, :) = 0.0_RK
-                XNJ(4, 3, :) = 0.5_RK * DNDX(J, :)
-                XNJ(5, 1, :) = 0.0_RK
-                XNJ(5, 2, :) = 0.5_RK * DNDZ(J, :)
-                XNJ(5, 3, :) = 0.5_RK * DNDY(J, :)
+                XNJ(1, 3, :) = 0.0D0
+                XNJ(2, 1, :) = -DNDX(J, :) / 3.0D0
+                XNJ(2, 2, :) = -DNDY(J, :) / 3.0D0
+                XNJ(2, 3, :) = 2.0D0 * DNDZ(J, :) / 3.0D0
+                XNJ(3, 1, :) = 0.5D0 * DNDY(J, :)
+                XNJ(3, 2, :) = 0.5D0 * DNDX(J, :)
+                XNJ(3, 3, :) = 0.0D0
+                XNJ(4, 1, :) = 0.5D0 * DNDZ(J, :)
+                XNJ(4, 2, :) = 0.0D0
+                XNJ(4, 3, :) = 0.5D0 * DNDX(J, :)
+                XNJ(5, 1, :) = 0.0D0
+                XNJ(5, 2, :) = 0.5D0 * DNDZ(J, :)
+                XNJ(5, 3, :) = 0.5D0 * DNDY(J, :)
                 !
-                TEMP2 = 0.0_RK
+                TEMP2 = 0.0D0
                 !
                 CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ,1, 2, IER)
                 !

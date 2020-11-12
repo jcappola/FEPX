@@ -101,9 +101,9 @@ CONTAINS
     INTEGER(IK) :: UNIT
     INTEGER(IK) :: NUMVERT
     !
-    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP = RK_ONE
-    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PRISM = RK_ONE
-    REAL(RK), PARAMETER :: DFLT_CRATIO = RK_ONE
+    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_HRATIO_HCP_PRISM = 1.0D0
+    REAL(RK), PARAMETER :: DFLT_CRATIO = 1.0D0
     !
     REAL(RK) :: HRHCP_PYR
     REAL(RK) :: HRHCP_PRISM
@@ -259,9 +259,9 @@ CONTAINS
     !
     ! Parameters
     !
-    REAL(RK), PARAMETER :: Z = RK_ZERO
-    REAL(RK), PARAMETER :: P2 = RK_ONE / RK_ROOT_2
-    REAL(RK), PARAMETER :: P3 = RK_ONE / RK_ROOT_3
+    REAL(RK), PARAMETER :: Z = 0.0D0
+    REAL(RK), PARAMETER :: P2 = 1.0D0 / DSQRT(2.0D0)
+    REAL(RK), PARAMETER :: P3 = 1.0D0 / DSQRT(3.0D0)
     REAL(RK), PARAMETER :: M2 = -P2
     REAL(RK), PARAMETER :: M3 = -P3
     !
@@ -269,13 +269,13 @@ CONTAINS
     !
     ! Parameters
     !
-    REAL(RK), PARAMETER :: P6_1 = RK_ONE / RK_ROOT_6
-    REAL(RK), PARAMETER :: P6_2 = RK_TWO * P6_1
+    REAL(RK), PARAMETER :: P6_1 = 1.0D0 / DSQRT(6.0D0)
+    REAL(RK), PARAMETER :: P6_2 = 2.0D0 * P6_1
     REAL(RK), PARAMETER :: M6_1 = -P6_1
     REAL(RK), PARAMETER :: M6_2 = -P6_2
-    REAL(RK), PARAMETER :: P14_1 = RK_ONE/RK_ROOT_14
-    REAL(RK), PARAMETER :: P14_2 = RK_TWO/RK_ROOT_14
-    REAL(RK), PARAMETER :: P14_3 = RK_THREE/RK_ROOT_14
+    REAL(RK), PARAMETER :: P14_1 = 1.0D0 / DSQRT(14.0D0)
+    REAL(RK), PARAMETER :: P14_2 = 2.0D0 / DSQRT(14.0D0)
+    REAL(RK), PARAMETER :: P14_3 = 3.0D0 / DSQRT(14.0D0)
     REAL(RK), PARAMETER :: M14_1=-P14_1
     REAL(RK), PARAMETER :: M14_2=-P14_2
     REAL(RK), PARAMETER :: M14_3=-P14_3
@@ -331,8 +331,8 @@ CONTAINS
     !
     ! Parameters
     !
-    REAL(RK), PARAMETER :: ONE = 1.0_RK, HALF = 0.5_RK
-    REAL(RK), PARAMETER :: COS_30 = HALF*RK_ROOT_3
+    REAL(RK), PARAMETER :: ONE = 1.0D0, HALF = 0.5D0
+    REAL(RK), PARAMETER :: COS_30 = HALF * DSQRT(3.0D0)
     !
     ! Basal plane normals
     !
@@ -464,7 +464,7 @@ CONTAINS
         !
         ! Prismatic
         !
-        RESCALE  = RK_ONE / HRATIO_HCP_PRISM
+        RESCALE  = 1.0D0 / HRATIO_HCP_PRISM
         !
         SCHMID(1, 1, 4:6) = RESCALE * HEX_PRIS_SD(1, :) * HEX_PRIS_SN(1, :)
         SCHMID(2, 1, 4:6) = RESCALE * HEX_PRIS_SD(2, :) * HEX_PRIS_SN(1, :)
@@ -478,20 +478,21 @@ CONTAINS
         !
         ! Pyramidal
         !
-        RESCALE  = RK_ONE / HRATIO_HCP
+        RESCALE  = 1.0D0 / HRATIO_HCP
         !
         ! Convert Miller indices to spatial directions.
         !
         SNRM(1, :) = HEX_PYR1_SN(1, :)
-        SNRM(2, :) = (2.0_RK * HEX_PYR1_SN(2, :) + SNRM(1, :)) / RK_ROOT_3
+        SNRM(2, :) = (2.0D0 * HEX_PYR1_SN(2, :) + SNRM(1, :)) / DSQRT(3.0D0)
         SNRM(3, :) = HEX_PYR1_SN(4, :) / C_OVER_A
-        SNRM = SNRM / SPREAD(SOURCE = SQRT(SUM(SNRM * SNRM, DIM = 1)), &
+        SNRM = SNRM / SPREAD(SOURCE = DSQRT(SUM(SNRM * SNRM, DIM = 1)), &
             & DIM = 1, NCOPIES = 3)
 
-        SDIR(1, :) = 1.5_RK  *HEX_PYR1_SD(1, :)
-        SDIR(2, :) =(HEX_PYR1_SD(2, :) + 0.5_RK * HEX_PYR1_SD(1, :)) * RK_ROOT_3
+        SDIR(1, :) = 1.5D0  *HEX_PYR1_SD(1, :)
+        SDIR(2, :) =(HEX_PYR1_SD(2, :) + 0.5D0 * HEX_PYR1_SD(1, :)) * &
+            & DSQRT(3.0D0)
         SDIR(3, :) = HEX_PYR1_SD(4, :) * C_OVER_A
-        SDIR = SDIR / SPREAD(SOURCE = SQRT(SUM(SDIR * SDIR, DIM = 1)), &
+        SDIR = SDIR / SPREAD(SOURCE = DSQRT(SUM(SDIR * SDIR, DIM = 1)), &
             & DIM = 1, NCOPIES = 3)
         !
         SCHMID(1, 1, 7:18) = RESCALE * SDIR(1, :) * SNRM(1, :)

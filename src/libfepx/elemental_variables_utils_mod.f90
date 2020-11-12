@@ -59,16 +59,16 @@ CONTAINS
     REAL(RK), ALLOCATABLE :: DP_HAT_TMP(:, :, :), WP_HAT_TMP(:, :, :)
     REAL(RK) :: TMP(0:(M_EL - 1))
     !
-    REAL(RK), PARAMETER :: TWOTHIRDS = 2.0_RK / 3.0_RK
+    REAL(RK), PARAMETER :: TWOTHIRDS = 2.0D0 / 3.0D0
     !
     !---------------------------------------------------------------------------
     !
     ! Initialize
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
-    DPEFF = 0.0_RK
-    DP_HAT = 0.0_RK
-    WP_HAT = 0.0_RK
+    DPEFF = 0.0D0
+    DP_HAT = 0.0D0
+    WP_HAT = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -80,8 +80,8 @@ CONTAINS
         !
         ALLOCATE(DP_HAT_TMP(0:TVEC1,0:(NUMIND-1),0:(N_SLIP - 1)))
         ALLOCATE(WP_HAT_TMP(0:DIMS1,0:(NUMIND-1),0:(N_SLIP - 1)))
-        DP_HAT_TMP = 0.0_RK
-        WP_HAT_TMP = 0.0_RK
+        DP_HAT_TMP = 0.0D0
+        WP_HAT_TMP = 0.0D0
         !
         DO ISLIP = 0, (N_SLIP - 1)
             !
@@ -111,11 +111,11 @@ CONTAINS
     END DO
     !
     TMP = TWOTHIRDS * SUM(DP_HAT * DP_HAT, 1)
-    DPEFF = SQRT(TMP)
+    DPEFF = DSQRT(TMP)
     !
     WHERE (TMP .LE. VTINY)
         !
-        DPEFF(:) = 0.0_RK
+        DPEFF(:) = 0.0D0
         !
     ENDWHERE
     !
@@ -160,9 +160,9 @@ CONTAINS
     !
     ! Initialize
     !
-    EL_WORK_RATE = 0.0_RK
-    EL_WORK_STEP = 0.0_RK
-    EL_WORK = 0.0_RK
+    EL_WORK_RATE = 0.0D0
+    EL_WORK_STEP = 0.0D0
+    EL_WORK = 0.0D0
     !
     DO I = EL_SUB1, EL_SUP1
         !
@@ -182,7 +182,7 @@ CONTAINS
         ! Calculate work over step (trapezoidal time integration)
         !   Use previous work rate EL_WORK_RATE_N
         !
-        EL_WORK_STEP(I) = DTIME * 0.5_RK * &
+        EL_WORK_STEP(I) = DTIME * 0.5D0 * &
             & (EL_WORK_RATE(I) + (EL_WORK_RATE_N(I)))
         !
         ! Calculate cumulative work at current step
@@ -193,20 +193,20 @@ CONTAINS
     !
     ! Update previous variables
     !
-    EL_WORK_N = 0.0_RK
-    EL_WORK_RATE_N = 0.0_RK
+    EL_WORK_N = 0.0D0
+    EL_WORK_RATE_N = 0.0D0
     !
     ! All values below VTINY are forced to zero
     !
     WHERE (EL_WORK .LE. VTINY)
         !
-        EL_WORK(:) = 0.0_RK
+        EL_WORK(:) = 0.0D0
         !
     END WHERE
     !
     WHERE (EL_WORK_RATE .LE. VTINY)
         !
-        EL_WORK_RATE(:) = 0.0_RK
+        EL_WORK_RATE(:) = 0.0D0
         !
     END WHERE
     !
@@ -264,18 +264,18 @@ CONTAINS
     !
     ! Initialize
     !
-    EL_WORKP_RATE = 0.0_RK
-    EL_WORKP_STEP = 0.0_RK
-    EL_WORKP = 0.0_RK
+    EL_WORKP_RATE = 0.0D0
+    EL_WORKP_STEP = 0.0D0
+    EL_WORKP = 0.0D0
     !
     DO I = EL_SUB1, EL_SUP1
         !
         ! Initialize looped variables
         !
-        SIGM = 0.0_RK
-        SIGDEV = 0.0_RK
-        SIGDEV5 = 0.0_RK
-        DP_HAT_SAM = 0.0_RK
+        SIGM = 0.0D0
+        SIGDEV = 0.0D0
+        SIGDEV5 = 0.0D0
+        DP_HAT_SAM = 0.0D0
         !
         ! Use transpose of crys-to-sample transformation:
         ! Lattice deform (below) transposes input (usually intented to go
@@ -291,7 +291,7 @@ CONTAINS
         ! First, construct deviatoric stress tensor (3x3)
         !
         SIGM = (S_AVG_3X3(0, 0, I) + S_AVG_3X3(1, 1, I) + S_AVG_3X3(2, 2, I)) &
-            & / 3.0_RK
+            & / 3.0D0
         SIGDEV = S_AVG_3X3(:, :, I)
         SIGDEV(0, 0) = SIGDEV(0, 0) - SIGM
         SIGDEV(1, 1) = SIGDEV(1, 1) - SIGM
@@ -312,7 +312,7 @@ CONTAINS
         ! Calculate work over step (trapezoidal time integration)
         !   Use previous work rate EL_WORKP_RATE_N
         !
-        EL_WORKP_STEP(I) = DTIME * 0.5_RK * &
+        EL_WORKP_STEP(I) = DTIME * 0.5D0 * &
             & (EL_WORKP_RATE(I) + (EL_WORKP_RATE_N(I)))
         !
         ! Calculate cumulative work at current step
@@ -323,20 +323,20 @@ CONTAINS
     !
     ! Update previous variables
     !
-    EL_WORKP_N = 0.0_RK
-    EL_WORKP_RATE_N = 0.0_RK
+    EL_WORKP_N = 0.0D0
+    EL_WORKP_RATE_N = 0.0D0
     !
     ! All values below VTINY are forced to zero
     !
     WHERE (EL_WORKP .LE. VTINY)
         !
-        EL_WORKP(:) = 0.0_RK
+        EL_WORKP(:) = 0.0D0
         !
     END WHERE
     !
     WHERE (EL_WORKP_RATE .LE. VTINY)
         !
-        EL_WORKP_RATE(:) = 0.0_RK
+        EL_WORKP_RATE(:) = 0.0D0
         !
     END WHERE
     !

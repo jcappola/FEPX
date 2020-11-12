@@ -165,7 +165,7 @@ CONTAINS
     !
     MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
     !
-    F_VEC = 0.0_RK
+    F_VEC = 0.0D0
     !
     ! PRD: Update internal variables at QPs.
     !
@@ -238,11 +238,11 @@ CONTAINS
             !
         END DO
         !
-        IF (MINVAL(DET) .LT. 0.0_RK ) THEN
+        IF (MINVAL(DET) .LT. 0.0D0 ) THEN
             !
             DO I = EL_SUB1, EL_SUP1
                 !
-                IF (DET(I, IQPT) .LT. 0.0_RK) THEN
+                IF (DET(I, IQPT) .LT. 0.0D0) THEN
                     !
                     WRITE(DFLT_U, *) 'Error  :       . Element: ',i,', determinant: ',DET(I, IQPT)
                     !
@@ -264,21 +264,21 @@ CONTAINS
             !
             XNI(1, 1, :) = DNDX(I, :,IQPT)
             XNI(2, 1, :) = -DNDY(I, :,IQPT)
-            XNI(3, 1, :) = 0.0_RK
-            XNI(1, 2, :) = -DNDX(I, :,IQPT) / 3.0_RK
-            XNI(2, 2, :) = -DNDY(I, :,IQPT) / 3.0_RK
-            XNI(3, 2, :) = 2.0_RK * DNDZ(I, :,IQPT) / 3.0_RK
-            XNI(1, 3, :) = 0.5_RK * DNDY(I, :,IQPT)
-            XNI(2, 3, :) = 0.5_RK * DNDX(I, :,IQPT)
-            XNI(3, 3, :) = 0.0_RK
-            XNI(1, 4, :) = 0.5_RK * DNDZ(I, :,IQPT)
-            XNI(2, 4, :) = 0.0_RK
-            XNI(3, 4, :) = 0.5_RK * DNDX(I, :,IQPT)
-            XNI(1, 5, :) = 0.0_RK
-            XNI(2, 5, :) = 0.5_RK * DNDZ(I, :,IQPT)
-            XNI(3, 5, :) = 0.5_RK * DNDY(I, :,IQPT)
+            XNI(3, 1, :) = 0.0D0
+            XNI(1, 2, :) = -DNDX(I, :,IQPT) / 3.0D0
+            XNI(2, 2, :) = -DNDY(I, :,IQPT) / 3.0D0
+            XNI(3, 2, :) = 2.0D0 * DNDZ(I, :,IQPT) / 3.0D0
+            XNI(1, 3, :) = 0.5D0 * DNDY(I, :,IQPT)
+            XNI(2, 3, :) = 0.5D0 * DNDX(I, :,IQPT)
+            XNI(3, 3, :) = 0.0D0
+            XNI(1, 4, :) = 0.5D0 * DNDZ(I, :,IQPT)
+            XNI(2, 4, :) = 0.0D0
+            XNI(3, 4, :) = 0.5D0 * DNDX(I, :,IQPT)
+            XNI(1, 5, :) = 0.0D0
+            XNI(2, 5, :) = 0.5D0 * DNDZ(I, :,IQPT)
+            XNI(3, 5, :) = 0.5D0 * DNDY(I, :,IQPT)
             !
-            FTEMP = 0.0_RK
+            FTEMP = 0.0D0
             !
             !  RC 6/24/2016: Reordered for better memory striding
             !
@@ -300,8 +300,8 @@ CONTAINS
             F_VEC(I2, :) = F_VEC(I2, :) + FTEMP(2, :) * DET(:,IQPT)
             F_VEC(I3, :) = F_VEC(I3, :) + FTEMP(3, :) * DET(:,IQPT)
             !
-            TEMP1 = 0.0_RK
-            TEMP3 = 0.0_RK
+            TEMP1 = 0.0D0
+            TEMP3 = 0.0D0
             !
             CALL GEN_MATRIX_MULT(TEMP1, XNI, C(:, :, :, IQPT), 1, 2, IER)
             !
@@ -316,22 +316,22 @@ CONTAINS
                 !
                 XNJ(1, 1, :) = DNDX(J, :, IQPT)
                 XNJ(1, 2, :) = -DNDY(J, :, IQPT)
-                XNJ(1, 3, :) = 0.0_RK
-                XNJ(2, 1, :) = -DNDX(J, :, IQPT) / 3.0_RK
-                XNJ(2, 2, :) = -DNDY(J, :, IQPT) / 3.0_RK
-                XNJ(2, 3, :) = 2.0_RK * DNDZ(J, :, IQPT)  /3.0_RK
-                XNJ(3, 1, :) = 0.5_RK * DNDY(J, :, IQPT)
-                XNJ(3, 2, :) = 0.5_RK * DNDX(J, :, IQPT)
-                XNJ(3, 3, :) = 0.0_RK
-                XNJ(4, 1, :) = 0.5_RK * DNDZ(J, :, IQPT)
-                XNJ(4, 2, :) = 0.0_RK
-                XNJ(4, 3, :) = 0.5_RK * DNDX(J, :, IQPT)
-                XNJ(5, 1, :) = 0.0_RK
-                XNJ(5, 2, :) = 0.5_RK * DNDZ(J, :, IQPT)
-                XNJ(5, 3, :) = 0.5_RK * DNDY(J, :, IQPT)
+                XNJ(1, 3, :) = 0.0D0
+                XNJ(2, 1, :) = -DNDX(J, :, IQPT) / 3.0D0
+                XNJ(2, 2, :) = -DNDY(J, :, IQPT) / 3.0D0
+                XNJ(2, 3, :) = 2.0D0 * DNDZ(J, :, IQPT)  /3.0D0
+                XNJ(3, 1, :) = 0.5D0 * DNDY(J, :, IQPT)
+                XNJ(3, 2, :) = 0.5D0 * DNDX(J, :, IQPT)
+                XNJ(3, 3, :) = 0.0D0
+                XNJ(4, 1, :) = 0.5D0 * DNDZ(J, :, IQPT)
+                XNJ(4, 2, :) = 0.0D0
+                XNJ(4, 3, :) = 0.5D0 * DNDX(J, :, IQPT)
+                XNJ(5, 1, :) = 0.0D0
+                XNJ(5, 2, :) = 0.5D0 * DNDZ(J, :, IQPT)
+                XNJ(5, 3, :) = 0.5D0 * DNDY(J, :, IQPT)
                 !
-                TEMP2 = 0.0_RK
-                TEMP4 = 0.0_RK
+                TEMP2 = 0.0D0
+                TEMP4 = 0.0D0
                 !
                 CALL GEN_MATRIX_MULT(TEMP2, TEMP1, XNJ, 1, 2, IER)
                 !

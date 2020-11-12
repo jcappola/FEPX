@@ -109,12 +109,12 @@ CONTAINS
         !
         ! dbg: Note the hardwired temperature and state variable.
         !
-        TEMP_K = 273.0_RK + 400.0_RK
-        STATE_ISO = 20.0e06_RK
+        TEMP_K = 273.0D0 + 400.0D0
+        STATE_ISO = 20.0D6
         !
         CALL ISOTROPIC(EPSEFF, TEMP_K, STATE_ISO, CMU, DSDT_ISO)
         !
-        STIF = 0.0_RK
+        STIF = 0.0D0
         STIF(1, 1, :) = CCONST(1) * CMU
         STIF(2, 2, :) = CCONST(2) * CMU
         STIF(3, 3, :) = CCONST(3) * CMU
@@ -123,7 +123,7 @@ CONTAINS
         !
     END IF
     !
-    SCALE = 0.0_RK
+    SCALE = 0.0D0
     !
     DO I = 1, TVEC
         !
@@ -131,7 +131,7 @@ CONTAINS
         !
     END DO
     !
-    SCALE = SCALE / 5.0_RK
+    SCALE = SCALE / 5.0D0
     !
     END SUBROUTINE MATERIAL_MATRIX_VP
     !
@@ -174,17 +174,17 @@ CONTAINS
     !
     !REAL(RK) :: a0
     !PARAMETER ( a0     = 9.64d52     )
-    REAL(RK), PARAMETER :: LOG_A0 = 122.0_RK
-    REAL(RK), PARAMETER :: C0 = 6.19E-9_RK
-    REAL(RK), PARAMETER :: QPR = 1.45E4_RK
-    REAL(RK), PARAMETER :: GE = 24.20E3_RK
-    REAL(RK), PARAMETER :: M = 7.80_RK
-    REAL(RK), PARAMETER :: F0 = 2.12E19_RK
+    REAL(RK), PARAMETER :: LOG_A0 = 122.0D0
+    REAL(RK), PARAMETER :: C0 = 6.19D-9
+    REAL(RK), PARAMETER :: QPR = 1.45D4
+    REAL(RK), PARAMETER :: GE = 24.20D3
+    REAL(RK), PARAMETER :: M = 7.80D0
+    REAL(RK), PARAMETER :: F0 = 2.12D19
     REAL(RK), PARAMETER :: QR = QPR
-    REAL(RK), PARAMETER :: SMALLM = 5.0_RK
-    REAL(RK), PARAMETER :: LAMBDA = 0.14_RK
-    REAL(RK), PARAMETER :: MP = 3.5_RK
-    REAL(RK), PARAMETER :: N = 6.0_RK
+    REAL(RK), PARAMETER :: SMALLM = 5.0D0
+    REAL(RK), PARAMETER :: LAMBDA = 0.14D0
+    REAL(RK), PARAMETER :: MP = 3.5D0
+    REAL(RK), PARAMETER :: N = 6.0D0
     !
     REAL(RK) :: A(EL_SUB1:EL_SUP1)
     REAL(RK) :: S(EL_SUB1:EL_SUP1)
@@ -199,11 +199,11 @@ CONTAINS
     !
     ! Place the state variable in Pascals
     !
-    VISC = 1.0_RK
+    VISC = 1.0D0
     !
     RETURN
     !
-    S = S_PA / 1.0E6_RK
+    S = S_PA / 1.0D6
     !
     ! Compute flow stress in viscous (friction) element
     !   a = a0 * exp(-QPR/t)
@@ -228,11 +228,11 @@ CONTAINS
     ! Convert to Pascals
     !
     !SIGMA = s * DII**0.10
-    SIGMA = SIGMA * 1.0E6_RK
+    SIGMA = SIGMA * 1.0D6
     !
     ! Compute viscosity
     !
-    VISC = SIGMA / (3.0_RK * DII)
+    VISC = SIGMA / (3.0D0 * DII)
     !
     print *,'SIGMA', MINVAL(SIGMA), MAXVAL(SIGMA)
     print *,'visc', MINVAL(VISC), MAXVAL(VISC)

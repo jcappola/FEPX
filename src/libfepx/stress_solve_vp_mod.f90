@@ -93,7 +93,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     M_EL = EL_SUP1 - EL_SUB1 + 1
-    CRSS_AVG = 0.0_RK
+    CRSS_AVG = 0.0D0
     !
     CALL SCALE_DOWN_DEFR(D_VEC_LAT, EPSEFF, NGRAIN, M_EL)
     CALL COMPUTE_WORK(PLWORK, D_VEC_LAT, NGRAIN, M_EL)
@@ -188,7 +188,7 @@ CONTAINS
     !
     DO I = 0, TVEC1
         !
-        WHERE (EPSEFF > 0.0_RK)
+        WHERE (EPSEFF > 0.0D0)
             !
             D_VEC(I, :, :) = D_VEC(I, :, :) / EPSEFF
             !
@@ -232,7 +232,7 @@ CONTAINS
     ! tsh, 1/26/03
     MY_PHASE(N - 1, :) = PHASE(EL_SUB1:EL_SUP1)
     !
-    PLWORK = 0.0_RK
+    PLWORK = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -299,7 +299,7 @@ CONTAINS
     MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
     !
     VERTEX = 0
-    DIRECTION = -1.0_RK
+    DIRECTION = -1.0D0
     DO IPHASE = 1, NUMPHASES
         !
         CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE(N - 1, :), INDICES)
@@ -341,7 +341,7 @@ CONTAINS
         !
         DO I = 0,(N - 1)
             !
-            PLWORK(VERTEX(I, J), I, J) = 0.0_RK
+            PLWORK(VERTEX(I, J), I, J) = 0.0D0
             !
         END DO
         !
@@ -459,7 +459,7 @@ CONTAINS
     !
     !-tm  from donald's verion:
     !
-    TAUMAX = 1.0E-8_RK  ! deb/ prevent div by 0
+    TAUMAX = 1.0D-8  ! deb/ prevent div by 0
     !TAUMAX = 0.0d0
     !
     DO IPHASE = 1, NUMPHASES
@@ -541,7 +541,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    PROJ_TMP = 0.0_RK
+    PROJ_TMP = 0.0D0
     !
     DO I = 0, TVEC1
         !
@@ -611,7 +611,7 @@ CONTAINS
     !
     NM = N * M
     IRC = 0
-    SIG_0 = 0.0_RK
+    SIG_0 = 0.0D0
     !
     NEWTON_OK = .TRUE.
     !
@@ -633,27 +633,27 @@ CONTAINS
         !
         CALL GET_RES(RES, RHS, RSS, SHEAR, XLAMBDA, D_VEC, CRSS, N, M)
         !
-        FACT = 1.0_RK
+        FACT = 1.0D0
         RATIO_RES = RES / RES_N
         !
-        DO WHILE (ANY(RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. &
+        DO WHILE (ANY(RATIO_RES .GT. 1.0D0 .AND. NEWTON_OK .AND. .NOT. &
             &CONVERGED))
             !
-            WHERE (RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+            WHERE (RATIO_RES .GT. 1.0D0 .AND. NEWTON_OK .AND. .NOT. CONVERGED)
                 !
-                FACT = FACT*0.5_RK
+                FACT = FACT*0.5D0
             END WHERE
             !
-            IF (ANY(FACT .LT. 0.001_RK)) THEN
+            IF (ANY(FACT .LT. 0.001D0)) THEN
                 !
                 IF (VP_LOG .AND. (MYID .EQ. 0)) THEN
                     !
                     WRITE(DFLT_U, '(A)') 'Warning:       . SOLVE_NEWTON_VP: Line &
-                        &search failure for ', COUNT(FACT .LT. 0.001_RK), ' grains.'
+                        &search failure for ', COUNT(FACT .LT. 0.001D0), ' grains.'
                     !
                 END IF
                 !
-                WHERE (FACT .LT. 0.001_RK)
+                WHERE (FACT .LT. 0.001D0)
                     !
                     NEWTON_OK = .FALSE.
                     !
@@ -669,7 +669,7 @@ CONTAINS
             !
             CALL GET_RES(RES_AUX, RHS, RSS, SHEAR, XLAMBDA, D_VEC, CRSS, N, M)
             !
-            WHERE(RATIO_RES .GT. 1.0_RK .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+            WHERE(RATIO_RES .GT. 1.0D0 .AND. NEWTON_OK .AND. .NOT. CONVERGED)
                 !
                 RES = RES_AUX
                 RATIO_RES = RES / RES_N
@@ -771,7 +771,7 @@ CONTAINS
     MY_PHASE(N - 1,:) = PHASE(EL_SUB1:EL_SUP1)
     !
     RHS = -D
-    RES = 0.0_RK
+    RES = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -790,11 +790,11 @@ CONTAINS
             !
             WHERE (ABS(RSS(ISLIP, :, INDICES)) .LT. T_MIN(IPHASE))
                 !
-                RSS(ISLIP, :, INDICES) = 0.0_RK
+                RSS(ISLIP, :, INDICES) = 0.0D0
                 !
             END WHERE
             !
-            XM_FAKE = 0.4_RK
+            XM_FAKE = 0.4D0
             !XM_FAKE=0.02d0
             !
             CALL POWER_LAW(SHEAR(ISLIP, :, :), RSS(ISLIP, :, :), XM_FAKE, &
@@ -816,7 +816,7 @@ CONTAINS
     !
     DO J = 0, DIMS1
         !
-        RES = RES + RHS(J, :, :) ** 2.0_RK
+        RES = RES + RHS(J, :, :) ** 2.0D0
         !
     END DO
     !
@@ -866,7 +866,7 @@ CONTAINS
     !
     MY_PHASE(N - 1, :) = PHASE(EL_SUB1:EL_SUP1)
     !
-    STIF = 0.0_RK
+    STIF = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -878,7 +878,7 @@ CONTAINS
         !
         DO ISLIP = 0, (N_SLIP - 1)
             !
-            XM_FAKE = 0.4_RK
+            XM_FAKE = 0.4D0
             !XM_FAKE=0.02d0
             !
             CALL COMPLIANCE(COMP, RSS(ISLIP, :, :), SHEAR(ISLIP, :, :), CRSS, &
@@ -945,7 +945,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    P = 1.0_RK / XM - 1.0_RK
+    P = 1.0D0 / XM - 1.0D0
     AT = ABS(T(:,INDICES))
     !
     WHERE (AT .GT. T_MIN)
@@ -956,7 +956,7 @@ CONTAINS
         !
     ELSE WHERE
         !
-        POWER_TMP = 0.0_RK
+        POWER_TMP = 0.0D0
         !
     END WHERE
     !
@@ -1002,7 +1002,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    COMP_TMP = 0.0_RK
+    COMP_TMP = 0.0D0
     !
     WHERE (ABS(T(:,INDICES)) .GT. T_MIN)
         !
@@ -1227,7 +1227,7 @@ CONTAINS
     DO IPHASE = 1, NUMPHASES
         !
         !-tm
-        XM_FAKE = 0.4_RK
+        XM_FAKE = 0.4D0
         !XM_FAKE=0.02d0
         !
         SCALE = EPSEFF ** XM_FAKE

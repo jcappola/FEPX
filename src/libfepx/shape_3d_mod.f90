@@ -108,15 +108,15 @@ CONTAINS
     !
     ! Initialize Jacobian matrix
     !
-    JAC11 = 0.0_RK
-    JAC12 = 0.0_RK
-    JAC13 = 0.0_RK
-    JAC21 = 0.0_RK
-    JAC22 = 0.0_RK
-    JAC23 = 0.0_RK
-    JAC31 = 0.0_RK
-    JAC32 = 0.0_RK
-    JAC33 = 0.0_RK
+    JAC11 = 0.0D0
+    JAC12 = 0.0D0
+    JAC13 = 0.0D0
+    JAC21 = 0.0D0
+    JAC22 = 0.0D0
+    JAC23 = 0.0D0
+    JAC31 = 0.0D0
+    JAC32 = 0.0D0
+    JAC33 = 0.0D0
     !
     DO I = 0, NNPE
         !
@@ -249,16 +249,16 @@ CONTAINS
         X2 = PNT(YDOF)
         X3 = PNT(ZDOF)
         !
-        SF( 1) = 2.0_RK * (X1 + X2 + X3 - 1.0_RK) * (X1 + X2 + X3 - 0.5_RK)
-        SF( 2) = -4.0_RK * (X1 + X2 + X3 - 1.0_RK) * X1
-        SF( 3) = 2.0_RK * X1 * (X1 - 0.5_RK)
-        SF( 4) = 4.0_RK * X2 * X1
-        SF( 5) = 2.0_RK * X2 * (X2 - 0.5_RK)
-        SF( 6) = -4.0_RK * (X1 + X2 + X3 - 1.0_RK) * X2
-        SF( 7) = -4.0_RK * (X1 + X2 + X3 - 1.0_RK) * X3
-        SF( 8) = 4.0_RK * X1 * X3
-        SF( 9) = 4.0_RK * X2 * X3
-        SF(10) = 2.0_RK * X3 * (X3 - 0.5_RK)
+        SF( 1) = 2.0D0 * (X1 + X2 + X3 - 1.0D0) * (X1 + X2 + X3 - 0.5D0)
+        SF( 2) = -4.0D0 * (X1 + X2 + X3 - 1.0D0) * X1
+        SF( 3) = 2.0D0 * X1 * (X1 - 0.5D0)
+        SF( 4) = 4.0D0 * X2 * X1
+        SF( 5) = 2.0D0 * X2 * (X2 - 0.5D0)
+        SF( 6) = -4.0D0 * (X1 + X2 + X3 - 1.0D0) * X2
+        SF( 7) = -4.0D0 * (X1 + X2 + X3 - 1.0D0) * X3
+        SF( 8) = 4.0D0 * X1 * X3
+        SF( 9) = 4.0D0 * X2 * X3
+        SF(10) = 2.0D0 * X3 * (X3 - 0.5D0)
         !
         TMPVEC = MATMUL(VEC, SF)
         !
@@ -308,17 +308,17 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    SHAPE(0) = 2.0_RK * (LOC0 + LOC1 + LOC2 - 1.0_RK) * (LOC0 + LOC1 + LOC2 - &
-        & 0.5_RK)
-    SHAPE(1) = -4.0_RK * (LOC0 + LOC1 + LOC2 - 1.0_RK) * LOC0
-    SHAPE(2) = 2.0_RK * LOC0 * (LOC0 - 0.5_RK)
-    SHAPE(3) = 4.0_RK * LOC1 * LOC0
-    SHAPE(4) = 2.0_RK * LOC1 * (LOC1 - 0.5_RK)
-    SHAPE(5) = -4.0_RK * (LOC0 + LOC1 + LOC2 - 1.0_RK) * LOC1
-    SHAPE(6) = -4.0_RK * (LOC0 + LOC1 + LOC2 - 1.0_RK) * LOC2
-    SHAPE(7) = 4.0_RK * LOC0 * LOC2
-    SHAPE(8) = 4.0_RK * LOC1 * LOC2
-    SHAPE(9) = 2.0_RK * LOC2 * (LOC2 - 0.5_RK)
+    SHAPE(0) = 2.0D0 * (LOC0 + LOC1 + LOC2 - 1.0D0) * (LOC0 + LOC1 + LOC2 - &
+        & 0.5D0)
+    SHAPE(1) = -4.0D0 * (LOC0 + LOC1 + LOC2 - 1.0D0) * LOC0
+    SHAPE(2) = 2.0D0 * LOC0 * (LOC0 - 0.5D0)
+    SHAPE(3) = 4.0D0 * LOC1 * LOC0
+    SHAPE(4) = 2.0D0 * LOC1 * (LOC1 - 0.5D0)
+    SHAPE(5) = -4.0D0 * (LOC0 + LOC1 + LOC2 - 1.0D0) * LOC1
+    SHAPE(6) = -4.0D0 * (LOC0 + LOC1 + LOC2 - 1.0D0) * LOC2
+    SHAPE(7) = 4.0D0 * LOC0 * LOC2
+    SHAPE(8) = 4.0D0 * LOC1 * LOC2
+    SHAPE(9) = 2.0D0 * LOC2 * (LOC2 - 0.5D0)
     !
     RETURN
     !
@@ -346,38 +346,38 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    DNDA(0) = 4.0_RK * (LOC0 + LOC1 + LOC2) - 3.0_RK
-    DNDA(1) = -4.0_RK * (2.0_RK * LOC0 + LOC1 + LOC2 - 1.0_RK)
-    DNDA(2) = 4.0_RK * LOC0 - 1.0_RK
-    DNDA(3) = 4.0_RK * LOC1
-    DNDA(4) = 0.0_RK
-    DNDA(5) = -4.0_RK * LOC1
-    DNDA(6) = -4.0_RK * LOC2
-    DNDA(7) = 4.0_RK * LOC2
-    DNDA(8) = 0.0_RK
-    DNDA(9) = 0.0_RK
+    DNDA(0) = 4.0D0 * (LOC0 + LOC1 + LOC2) - 3.0D0
+    DNDA(1) = -4.0D0 * (2.0D0 * LOC0 + LOC1 + LOC2 - 1.0D0)
+    DNDA(2) = 4.0D0 * LOC0 - 1.0D0
+    DNDA(3) = 4.0D0 * LOC1
+    DNDA(4) = 0.0D0
+    DNDA(5) = -4.0D0 * LOC1
+    DNDA(6) = -4.0D0 * LOC2
+    DNDA(7) = 4.0D0 * LOC2
+    DNDA(8) = 0.0D0
+    DNDA(9) = 0.0D0
     !
-    DNDB(0) = 4.0_RK * (LOC0 + LOC1 + LOC2) - 3.0_RK
-    DNDB(1) = -4.0_RK * LOC0
-    DNDB(2) = 0.0_RK
-    DNDB(3) = 4.0_RK * LOC0
-    DNDB(4) = 4.0_RK * LOC1 - 1.0_RK
-    DNDB(5) = -4.0_RK * (LOC0 + 2.0_RK * LOC1 + LOC2 - 1.0_RK)
-    DNDB(6) = -4.0_RK * LOC2
-    DNDB(7) = 0.0_RK
-    DNDB(8) = 4.0_RK * LOC2
-    DNDB(9) = 0.0_RK
+    DNDB(0) = 4.0D0 * (LOC0 + LOC1 + LOC2) - 3.0D0
+    DNDB(1) = -4.0D0 * LOC0
+    DNDB(2) = 0.0D0
+    DNDB(3) = 4.0D0 * LOC0
+    DNDB(4) = 4.0D0 * LOC1 - 1.0D0
+    DNDB(5) = -4.0D0 * (LOC0 + 2.0D0 * LOC1 + LOC2 - 1.0D0)
+    DNDB(6) = -4.0D0 * LOC2
+    DNDB(7) = 0.0D0
+    DNDB(8) = 4.0D0 * LOC2
+    DNDB(9) = 0.0D0
     !
-    DNDC(0) = 4.0_RK * (LOC0 + LOC1 + LOC2) - 3.0_RK
-    DNDC(1) = -4.0_RK * LOC0
-    DNDC(2) = 0.0_RK
-    DNDC(3) = 0.0_RK
-    DNDC(4) = 0.0_RK
-    DNDC(5) = -4.0_RK * LOC1
-    DNDC(6) = -4.0_RK * (LOC0 + LOC1 + 2.0_RK * LOC2 - 1.0_RK)
-    DNDC(7) = 4.0_RK * LOC0
-    DNDC(8) = 4.0_RK * LOC1
-    DNDC(9) = 4.0_RK * LOC2 - 1.0_RK
+    DNDC(0) = 4.0D0 * (LOC0 + LOC1 + LOC2) - 3.0D0
+    DNDC(1) = -4.0D0 * LOC0
+    DNDC(2) = 0.0D0
+    DNDC(3) = 0.0D0
+    DNDC(4) = 0.0D0
+    DNDC(5) = -4.0D0 * LOC1
+    DNDC(6) = -4.0D0 * (LOC0 + LOC1 + 2.0D0 * LOC2 - 1.0D0)
+    DNDC(7) = 4.0D0 * LOC0
+    DNDC(8) = 4.0D0 * LOC1
+    DNDC(9) = 4.0D0 * LOC2 - 1.0D0
     !
     RETURN
     !
@@ -509,20 +509,20 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    DNDA(0) = 1.0_RK
-    DNDA(1) = 0.0_RK
-    DNDA(2) = 0.0_RK
-    DNDA(3) = -1.0_RK
+    DNDA(0) = 1.0D0
+    DNDA(1) = 0.0D0
+    DNDA(2) = 0.0D0
+    DNDA(3) = -1.0D0
     !
-    DNDB(0) = 0.0_RK
-    DNDB(1) = 0.0_RK
-    DNDB(2) = 1.0_RK
-    DNDB(3) = -1.0_RK
+    DNDB(0) = 0.0D0
+    DNDB(1) = 0.0D0
+    DNDB(2) = 1.0D0
+    DNDB(3) = -1.0D0
     !
-    DNDC(0) = 0.0_RK
-    DNDC(1) = 1.0_RK
-    DNDC(2) = 0.0_RK
-    DNDC(3) = -1.0_RK
+    DNDC(0) = 0.0D0
+    DNDC(1) = 1.0D0
+    DNDC(2) = 0.0D0
+    DNDC(3) = -1.0D0
     !
     RETURN
     !

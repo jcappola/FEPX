@@ -23,8 +23,7 @@ MODULE MICROSTRUCTURE_MOD
 !
 ! From libf95:
 !
-USE LIBF95, ONLY: RK => REAL_KIND, STANDARD_OUTPUT, RK_ONE, PI => RK_PI, &
-    & GETLINE, GETWORD
+USE LIBF95, ONLY: RK => REAL_KIND, STANDARD_OUTPUT, GETLINE, GETWORD
 !
 ! From libfepx:
 !
@@ -157,7 +156,7 @@ CONTAINS
     !
     ! Weights
     !
-    WTS = 1.0_RK / NGRAIN
+    WTS = 1.0D0 / NGRAIN
     !
     ! Check whether or not element orientations are to be used. Assign
     ! accordingly either per-grain or per-element.
@@ -367,10 +366,10 @@ CONTAINS
     !
     ! Initialize RSTAR_N (identity matrix)
     !
-    RSTAR_N = 0.0_RK
-    RSTAR_N(0, 0, :, :) = 1.0_RK
-    RSTAR_N(1, 1, :, :) = 1.0_RK
-    RSTAR_N(2, 2, :, :) = 1.0_RK
+    RSTAR_N = 0.0D0
+    RSTAR_N(0, 0, :, :) = 1.0D0
+    RSTAR_N(1, 1, :, :) = 1.0D0
+    RSTAR_N(2, 2, :, :) = 1.0D0
     !
     RETURN
     !
@@ -432,7 +431,7 @@ CONTAINS
     !
     ! Initialize
     !
-    GAMMADOT = 0.0_RK
+    GAMMADOT = 0.0D0
     !
     END SUBROUTINE ALLOCATE_GAMMADOT
     !
@@ -459,9 +458,9 @@ CONTAINS
     !
     ! Initialize
     !
-    GACCUMSHEAR = 0.0_RK
-    ACCUMSHEAR = 0.0_RK
-    ACCUMSHEAR_CEN = 0.0_RK
+    GACCUMSHEAR = 0.0D0
+    ACCUMSHEAR = 0.0D0
+    ACCUMSHEAR_CEN = 0.0D0
     !
     END SUBROUTINE ALLOCATE_GACCUMSHEAR
     !
@@ -482,7 +481,7 @@ CONTAINS
     !
     ALLOCATE(CRSS_N(0:MAXSLIP1, 0:NGRAIN1, EL_SUB1:EL_SUP1))
     !
-    CRSS_N = 0.0_RK
+    CRSS_N = 0.0D0
     !
     END SUBROUTINE ALLOCATE_CRSS_N
     !
@@ -514,7 +513,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ! Initialize
-    CRSS_N= 0.0_RK
+    CRSS_N= 0.0D0
     !
     ! Assign the crss based on the crystal type
     DO IPHASE = 1, NUMPHASES
@@ -700,7 +699,7 @@ CONTAINS
         CRYSTAL_PARM(4, IPHASE) = CRYS_OPTIONS%G_S0(IPHASE)
         CRYSTAL_PARM(5, IPHASE) = CRYS_OPTIONS%M_PRIME(IPHASE)
         CRYSTAL_PARM(6, IPHASE) = CRYS_OPTIONS%GAMMADOT_S0(IPHASE)
-        CRYSTAL_PARM(7, IPHASE) = HUGE(0.0_RK) ! Legacy fix to remove shear mod.
+        CRYSTAL_PARM(7, IPHASE) = HUGE(0.0D0) ! Legacy fix to remove shear mod.
         N_VOCE(IPHASE)          = CRYS_OPTIONS%N(IPHASE)
         !
         ! Compute bulk modulus for the phase from elastic stiffness tensor.
@@ -753,17 +752,17 @@ CONTAINS
         !
         ! Construct the inverse of KELAS.
         !
-        KEINV(:,IPHASE) = 1.0_RK / KELAS(:,IPHASE)
+        KEINV(:,IPHASE) = 1.0D0 / KELAS(:,IPHASE)
         !
         ! Finish assigning standard crystal parameters for each phase.
         !
         CRYSTAL_PARM(9, IPHASE)  = CRYSTAL_PARM(3, IPHASE)
-        CRYSTAL_PARM(10, IPHASE) = 0.0_RK
+        CRYSTAL_PARM(10, IPHASE) = 0.0D0
         !
         ! Check if any values in this phase are invalid and if so quit.
         ! DEBUG: This check needs to be reconciled better - JC
         !
-        IF ((ANY(CRYSTAL_PARM(:, IPHASE) .LT. 0.0_RK)) .AND. &
+        IF ((ANY(CRYSTAL_PARM(:, IPHASE) .LT. 0.0D0)) .AND. &
             & (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.)) THEN
             !
             CALL PAR_QUIT('Error  :     > Number of phases&
@@ -773,7 +772,7 @@ CONTAINS
         ! If current phase is HCP, handle specific phase data.
         !
         IF (CRYS_OPTIONS%CRYSTAL_TYPE(IPHASE) .EQ. 3) THEN
-            HCP_RATIOS = 1.0_RK
+            HCP_RATIOS = 1.0D0
             !
             HCP_RATIOS(0) = CRYS_OPTIONS%C_OVER_A(IPHASE)
             HCP_RATIOS(1) = CRYS_OPTIONS%PYRAMIDAL_TO_BASAL(IPHASE)
@@ -863,7 +862,7 @@ CONTAINS
                 !
                 CASE (1) ! FCC
                     !
-                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:5) .LT. 0.0_RK)) THEN
+                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:5) .LT. 0.0D0)) THEN
                         !            
                         CALL PAR_QUIT('Error  :     > Invalid latent hardening&
                                & parameters provided for phase.')
@@ -872,7 +871,7 @@ CONTAINS
                     !
                 CASE (2) ! BCC
                     !
-                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:7) .LT. 0.0_RK)) THEN
+                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:7) .LT. 0.0D0)) THEN
                         !            
                         CALL PAR_QUIT('Error  :     > Invalid latent hardening&
                                & parameters provided for phase.')
@@ -881,7 +880,7 @@ CONTAINS
                     !
                 CASE (3) ! HCP
                     !
-                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:8) .LT. 0.0_RK)) THEN
+                    IF (ANY(CRYS_OPTIONS%LATENT_PARAMETERS(IPHASE,1:8) .LT. 0.0D0)) THEN
                         !            
                         CALL PAR_QUIT('Error  :     > Invalid latent hardening&
                                & parameters provided for phase.')
@@ -906,7 +905,7 @@ CONTAINS
         !
         IF (OPTIONS%HARD_TYPE .EQ. 'cyclic') THEN
             !
-            IF (ANY(CYCLIC_PARM(:, IPHASE) .LT. 0.0_RK)) THEN
+            IF (ANY(CYCLIC_PARM(:, IPHASE) .LT. 0.0D0)) THEN
                 !            
                 CALL PAR_QUIT('Error  :     > Invalid cyclic hardening parameters&
                     & provided for phase.')

@@ -70,18 +70,18 @@ CONTAINS
     !
     CALL PART_GATHER(TEMP1, SOL, NP, DTRACE)
     !
-    TEMP2 = 0.0_RK
+    TEMP2 = 0.0D0
     !
     CALL GEN_MATRIX_VECTOR_MULT(TEMP2, GSTIF, TEMP1, IDUMMY, IDUMMY, IDUMMY, &
         & IDUMMY, IER)
     !
-    RES = 0.0_RK
+    RES = 0.0D0
     !
     CALL PART_SCATTER(RES, TEMP2, NP, .FALSE., DTRACE)
     !
     WHERE (BCS)
         !
-        RES = 0.0_RK
+        RES = 0.0D0
         !
     END WHERE
     !

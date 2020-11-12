@@ -81,39 +81,39 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        R = 0.0_RK
+        R = 0.0D0
         !
         DO I = 0, (N - 1)
             !
             DO J = 0, (M - 1)
                 !
-                ANGLERAD = 0.0_RK
-                COM = 0.0_RK
-                SOM = 0.0_RK
+                ANGLERAD = 0.0D0
+                COM = 0.0D0
+                SOM = 0.0D0
                 !
                 ANGLERAD = ANGLE(I, J) * RK_PI_OVER_180
                 COM = COS(ANGLERAD)
                 SOM = SIN(ANGLERAD)
                 !
                 ! Check if returned cos/sin values are near machine epsilon 
-                IF (ABS(COM) .LT. VTINY) COM = 0.0_RK
-                IF (ABS(SOM) .LT. VTINY) SOM = 0.0_RK
+                IF (ABS(COM) .LT. VTINY) COM = 0.0D0
+                IF (ABS(SOM) .LT. VTINY) SOM = 0.0D0
                 !
-                R(0, 0, I, J) = COM + (1.0_RK - COM) * (AXIS(0, I, J) ** 2)
-                R(0, 1, I, J) = (1.0_RK - COM) * AXIS(0, I, J) * &
+                R(0, 0, I, J) = COM + (1.0D0 - COM) * (AXIS(0, I, J) ** 2)
+                R(0, 1, I, J) = (1.0D0 - COM) * AXIS(0, I, J) * &
                     & AXIS(1, I, J) + SOM * AXIS(2, I, J)
-                R(0, 2, I, J) = (1.0_RK - COM) * AXIS(0, I, J) * &
+                R(0, 2, I, J) = (1.0D0 - COM) * AXIS(0, I, J) * &
                     & AXIS(2, I, J) - SOM * AXIS(1, I, J)
-                R(1, 0, I, J) = (1.0_RK - COM) * AXIS(0, I, J) * &
+                R(1, 0, I, J) = (1.0D0 - COM) * AXIS(0, I, J) * &
                     & AXIS(1, I, J) - SOM * AXIS(2, I, J)
-                R(1, 1, I, J) = COM + (1.0_RK - COM) * (AXIS(1, I, J) ** 2)
-                R(1, 2, I, J) = (1.0_RK - COM) * AXIS(1, I, J) * &
+                R(1, 1, I, J) = COM + (1.0D0 - COM) * (AXIS(1, I, J) ** 2)
+                R(1, 2, I, J) = (1.0D0 - COM) * AXIS(1, I, J) * &
                     & AXIS(2, I, J) + SOM * AXIS(0, I, J)
-                R(2, 0, I, J) = (1.0_RK - COM) * AXIS(0, I, J) * &
+                R(2, 0, I, J) = (1.0D0 - COM) * AXIS(0, I, J) * &
                     & AXIS(2, I, J) + SOM * AXIS(1, I, J)
-                R(2, 1, I, J) = (1.0_RK - COM) * AXIS(1, I, J) * &
+                R(2, 1, I, J) = (1.0D0 - COM) * AXIS(1, I, J) * &
                     & AXIS(2, I, J) - SOM * AXIS(0, I, J)
-                R(2, 2, I, J) = COM + (1.0_RK - COM) * (AXIS(2, I, J) ** 2)
+                R(2, 2, I, J) = COM + (1.0D0 - COM) * (AXIS(2, I, J) ** 2)
                 !
             ENDDO
             !
@@ -165,17 +165,17 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        R = 0.0_RK
+        R = 0.0D0
         !
-        PSI1RAD = 0.0_RK
-        PHIRAD = 0.0_RK
-        PSI2RAD = 0.0_RK
-        SPS1 = 0.0_RK
-        CPS1 = 0.0_RK
-        SPH = 0.0_RK
-        CPH = 0.0_RK
-        SPS2 = 0.0_RK
-        CPS2 = 0.0_RK
+        PSI1RAD = 0.0D0
+        PHIRAD = 0.0D0
+        PSI2RAD = 0.0D0
+        SPS1 = 0.0D0
+        CPS1 = 0.0D0
+        SPH = 0.0D0
+        CPH = 0.0D0
+        SPS2 = 0.0D0
+        CPS2 = 0.0D0
         !
         ! Convert from degrees to radians
         !
@@ -195,12 +195,12 @@ CONTAINS
             !
             DO J = 0, (M - 1)
                 !
-                IF (ABS(SPS1(I,J)) .LT. VTINY) SPS1(I,J) = 0.0_RK
-                IF (ABS(CPS1(I,J)) .LT. VTINY) CPS1(I,J) = 0.0_RK
-                IF (ABS(SPH(I,J))  .LT. VTINY) SPH(I,J)  = 0.0_RK
-                IF (ABS(CPH(I,J))  .LT. VTINY) CPH(I,J)  = 0.0_RK
-                IF (ABS(SPS2(I,J)) .LT. VTINY) SPS2(I,J) = 0.0_RK
-                IF (ABS(CPS2(I,J)) .LT. VTINY) CPS2(I,J) = 0.0_RK
+                IF (ABS(SPS1(I,J)) .LT. VTINY) SPS1(I,J) = 0.0D0
+                IF (ABS(CPS1(I,J)) .LT. VTINY) CPS1(I,J) = 0.0D0
+                IF (ABS(SPH(I,J))  .LT. VTINY) SPH(I,J)  = 0.0D0
+                IF (ABS(CPH(I,J))  .LT. VTINY) CPH(I,J)  = 0.0D0
+                IF (ABS(SPS2(I,J)) .LT. VTINY) SPS2(I,J) = 0.0D0
+                IF (ABS(CPS2(I,J)) .LT. VTINY) CPS2(I,J) = 0.0D0
                 !
             END DO
             !
@@ -265,17 +265,17 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        R = 0.0_RK
+        R = 0.0D0
         !
-        PSIRAD = 0.0_RK
-        THERAD = 0.0_RK
-        PHIRAD = 0.0_RK
-        SPS = 0.0_RK
-        CPS = 0.0_RK
-        STH = 0.0_RK
-        CTH = 0.0_RK
-        SPH = 0.0_RK
-        CPH = 0.0_RK
+        PSIRAD = 0.0D0
+        THERAD = 0.0D0
+        PHIRAD = 0.0D0
+        SPS = 0.0D0
+        CPS = 0.0D0
+        STH = 0.0D0
+        CTH = 0.0D0
+        SPH = 0.0D0
+        CPH = 0.0D0
         !
         ! Convert from degrees to radians
         !
@@ -295,12 +295,12 @@ CONTAINS
             !
             DO J = 0, (M - 1)
                 !
-                IF (ABS(SPS(I,J)) .LT. VTINY) SPS(I,J) = 0.0_RK
-                IF (ABS(CPS(I,J)) .LT. VTINY) CPS(I,J) = 0.0_RK
-                IF (ABS(STH(I,J)) .LT. VTINY) STH(I,J) = 0.0_RK
-                IF (ABS(CTH(I,J)) .LT. VTINY) CTH(I,J) = 0.0_RK
-                IF (ABS(SPH(I,J)) .LT. VTINY) SPH(I,J) = 0.0_RK
-                IF (ABS(CPH(I,J)) .LT. VTINY) CPH(I,J) = 0.0_RK
+                IF (ABS(SPS(I,J)) .LT. VTINY) SPS(I,J) = 0.0D0
+                IF (ABS(CPS(I,J)) .LT. VTINY) CPS(I,J) = 0.0D0
+                IF (ABS(STH(I,J)) .LT. VTINY) STH(I,J) = 0.0D0
+                IF (ABS(CTH(I,J)) .LT. VTINY) CTH(I,J) = 0.0D0
+                IF (ABS(SPH(I,J)) .LT. VTINY) SPH(I,J) = 0.0D0
+                IF (ABS(CPH(I,J)) .LT. VTINY) CPH(I,J) = 0.0D0
                 !
             END DO
             !
@@ -354,20 +354,20 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        R = 0.0_RK
+        R = 0.0D0
         !
         DO I = 0, (N - 1)
             !
             DO J = 0, (M - 1)
                 !
-                ANGLE = 0.0_RK
-                AXIS = 0.0_RK
-                COM = 0.0_RK
-                SOM = 0.0_RK
+                ANGLE = 0.0D0
+                AXIS = 0.0D0
+                COM = 0.0D0
+                SOM = 0.0D0
                 !
                 ! Convert to axis-angle representation
                 !
-                ANGLE = 2.0_RK * ATAN(NORM2(RODS(:, I, J)))
+                ANGLE = 2.0D0 * ATAN(NORM2(RODS(:, I, J)))
 		        !
                 IF (ANGLE .GT. VTINY) THEN
                     !
@@ -375,7 +375,7 @@ CONTAINS
                     !
                 ELSE
                     !
-                    AXIS(0) = 1.0_RK
+                    AXIS(0) = 1.0D0
                     !
                 END IF
                 !
@@ -383,26 +383,26 @@ CONTAINS
                 SOM = SIN(ANGLE)
                 !
                 ! Check if returned cos/sin values are near machine epsilon 
-                IF (ABS(COM) .LT. VTINY) COM = 0.0_RK
-                IF (ABS(SOM) .LT. VTINY) SOM = 0.0_RK
+                IF (ABS(COM) .LT. VTINY) COM = 0.0D0
+                IF (ABS(SOM) .LT. VTINY) SOM = 0.0D0
                 !
                 ! Then from axis-angle to rotation matrix
                 !
-                R(0, 0, I, J) = COM + (1.0_RK - COM) * (AXIS(0) ** 2)
-                R(0, 1, I, J) = (1.0_RK - COM) * AXIS(0) * AXIS(1) + &
+                R(0, 0, I, J) = COM + (1.0D0 - COM) * (AXIS(0) ** 2)
+                R(0, 1, I, J) = (1.0D0 - COM) * AXIS(0) * AXIS(1) + &
                     & SOM * AXIS(2)
-                R(0, 2, I, J) = (1.0_RK - COM) * AXIS(0) * AXIS(2) - &
+                R(0, 2, I, J) = (1.0D0 - COM) * AXIS(0) * AXIS(2) - &
                     & SOM * AXIS(1)
-                R(1, 0, I, J) = (1.0_RK - COM) * AXIS(0) * AXIS(1) - &
+                R(1, 0, I, J) = (1.0D0 - COM) * AXIS(0) * AXIS(1) - &
                     & SOM * AXIS(2)
-                R(1, 1, I, J) = COM + (1.0_RK - COM) * (AXIS(1) ** 2)
-                R(1, 2, I, J) = (1.0_RK - COM) * AXIS(1) * AXIS(2) + &
+                R(1, 1, I, J) = COM + (1.0D0 - COM) * (AXIS(1) ** 2)
+                R(1, 2, I, J) = (1.0D0 - COM) * AXIS(1) * AXIS(2) + &
                     & SOM * AXIS(0)
-                R(2, 0, I, J) = (1.0_RK - COM) * AXIS(0) * AXIS(2) + &
+                R(2, 0, I, J) = (1.0D0 - COM) * AXIS(0) * AXIS(2) + &
                     & SOM * AXIS(1)
-                R(2, 1, I, J) = (1.0_RK - COM) * AXIS(1) * AXIS(2) - &
+                R(2, 1, I, J) = (1.0D0 - COM) * AXIS(1) * AXIS(2) - &
                     & SOM * AXIS(0)
-                R(2, 2, I, J) = COM + (1.0_RK - COM) * (AXIS(2) ** 2)
+                R(2, 2, I, J) = COM + (1.0D0 - COM) * (AXIS(2) ** 2)
                 !
             ENDDO
             !
@@ -445,8 +445,8 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        ANGLE = 0.0_RK
-        AXIS = 0.0_RK
+        ANGLE = 0.0D0
+        AXIS = 0.0D0
         !
         DO I = 0, (N - 1)
             !
@@ -454,18 +454,18 @@ CONTAINS
                 !
                 ! Convert first to quaternion
                 !
-                Q0 = 0.0_RK
-                Q1 = 0.0_RK
-                Q2 = 0.0_RK
-                Q3 = 0.0_RK
+                Q0 = 0.0D0
+                Q1 = 0.0D0
+                Q2 = 0.0D0
+                Q3 = 0.0D0
                 !
-                Q0 = 0.5_RK * SQRT(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
+                Q0 = 0.5D0 * DSQRT(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
                     & R(2, 2, I, J))
-                Q1 = (-0.5_RK) * SQRT(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
+                Q1 = (-0.5D0) * DSQRT(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
                     & R(2, 2, I, J))
-                Q2 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
+                Q2 = (-0.5D0) * DSQRT(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
                     & R(2, 2, I, J))
-                Q3 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
+                Q3 = (-0.5D0) * DSQRT(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
                     & R(2, 2, I, J))
                 !
                 IF (R(2, 1, I, J) .LT. R(1, 2, I, J)) THEN
@@ -488,24 +488,24 @@ CONTAINS
                 !
                 ! Then from quaternion to axis-angle
                 !
-                ANGLE(I, J) = 2.0_RK * ACOS(Q0)
+                ANGLE(I, J) = 2.0D0 * ACOS(Q0)
                 !
-                IF (ANGLE(I, J) .NE. 0.0_RK) THEN
+                IF (ANGLE(I, J) .NE. 0.0D0) THEN
                     !
-                    IF (Q0 .NE. 0.0_RK) THEN
+                    IF (Q0 .NE. 0.0D0) THEN
                         !
-                        S = SQRT((Q1 ** 2) + (Q2 ** 2) + (Q3 ** 2))
+                        S = DSQRT((Q1 ** 2) + (Q2 ** 2) + (Q3 ** 2))
                         AXIS(0, I, J) = Q1 / S
                         AXIS(1, I, J) = Q2 / S
                         AXIS(2, I, J) = Q3 / S
                         !
-                        IF (Q0 .LT. 0.0_RK) THEN
+                        IF (Q0 .LT. 0.0D0) THEN
                             !
                             AXIS = -AXIS
                             !
                         ENDIF
                         !
-                    ELSEIF (Q0 .EQ. 0.0_RK) THEN
+                    ELSEIF (Q0 .EQ. 0.0D0) THEN
                         !
                         ANGLE(I, J) = RK_PI
                         AXIS(0, I, J) = Q1
@@ -514,11 +514,11 @@ CONTAINS
                         !
                     ENDIF
                     !
-                ELSEIF (ANGLE(I, J) .EQ. 0.0_RK) THEN
+                ELSEIF (ANGLE(I, J) .EQ. 0.0D0) THEN
                     !
-                    AXIS(0, I, J) = 0.0_RK
-                    AXIS(1, I, J) = 0.0_RK
-                    AXIS(2, I, J) = 1.0_RK
+                    AXIS(0, I, J) = 0.0D0
+                    AXIS(1, I, J) = 0.0D0
+                    AXIS(2, I, J) = 1.0D0
                     !
                 ENDIF
                 !
@@ -560,14 +560,14 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        PSI1 = 0.0_RK
-        PHI = 0.0_RK
-        PSI2 = 0.0_RK
-        XI = 0.0_RK
+        PSI1 = 0.0D0
+        PHI = 0.0D0
+        PSI2 = 0.0D0
+        XI = 0.0D0
         !
-        XI = 1.0_RK / SQRT(1 - (R(2, 2, :, :) ** 2))
+        XI = 1.0D0 / DSQRT(1 - (R(2, 2, :, :) ** 2))
         !
-        WHERE (ABS(R(2, 2, :, :)) .NE. 1.0_RK)
+        WHERE (ABS(R(2, 2, :, :)) .NE. 1.0D0)
             !
             PSI1 = ATAN2(R(2, 0, :, :) * XI, -R(2, 1, :, :) * XI)
             PHI = ACOS(R(2, 2, :, :))
@@ -576,8 +576,8 @@ CONTAINS
         ELSEWHERE
             !
             PSI1 = ATAN2(R(0, 1, :, :), R(0, 0, :, :))
-            PHI = (RK_PI/2.0_RK) * (1.0_RK - R(2, 2, :, :))
-            PSI2 = 0.0_RK
+            PHI = (RK_PI/2.0D0) * (1.0D0 - R(2, 2, :, :))
+            PSI2 = 0.0D0
             !
         ENDWHERE
         !
@@ -617,11 +617,11 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        PSI = 0.0_RK
-        THE = 0.0_RK
-        PHI = 0.0_RK
+        PSI = 0.0D0
+        THE = 0.0D0
+        PHI = 0.0D0
         !
-        STH = 0.0_RK
+        STH = 0.0D0
         !
         THE = ACOS(R(2, 2, :, :))
         !
@@ -633,7 +633,7 @@ CONTAINS
             !
         ELSEWHERE
             !
-            PSI = 0.0_RK
+            PSI = 0.0D0
             PHI = ATAN2(-R(1, 0, :, :), -R(0, 0, :, :))
             !
         ENDWHERE
@@ -682,7 +682,7 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        RODS = 0.0_RK
+        RODS = 0.0D0
         !
         DO I = 0, (N - 1)
             !
@@ -690,19 +690,19 @@ CONTAINS
                 !
                 ! Convert first to quaternions
                 !
-                Q0 = 0.0_RK
-                Q1 = 0.0_RK
-                Q2 = 0.0_RK
-                Q3 = 0.0_RK
+                Q0 = 0.0D0
+                Q1 = 0.0D0
+                Q2 = 0.0D0
+                Q3 = 0.0D0
                 !
-                ! Take ABS() of quantity within SQRT() to avoid NaNs
-                Q0 = 0.5_RK * SQRT(ABS(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
+                ! Take ABS() of quantity within DSQRT() to avoid NaNs
+                Q0 = 0.5D0 * DSQRT(ABS(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
                     & R(2, 2, I, J)))
-                Q1 = (-0.5_RK) * SQRT(ABS(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
+                Q1 = (-0.5D0) * DSQRT(ABS(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
                     & R(2, 2, I, J)))        
-                Q2 = (-0.5_RK) * SQRT(ABS(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
+                Q2 = (-0.5D0) * DSQRT(ABS(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
                     & R(2, 2, I, J)))
-                Q3 = (-0.5_RK) * SQRT(ABS(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
+                Q3 = (-0.5D0) * DSQRT(ABS(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
                     & R(2, 2, I, J)))
                 !
                 IF (R(2, 1, I, J) .LT. R(1, 2, I, J)) THEN
@@ -725,14 +725,14 @@ CONTAINS
                 !
                 ! Then from quaternions to Rodrigues
                 !
-                S = SQRT((Q1 ** 2) + (Q2 ** 2) + (Q3 ** 2))
+                S = DSQRT((Q1 ** 2) + (Q2 ** 2) + (Q3 ** 2))
                 T = TAN(ACOS(Q0))
                 !
                 IF (S .LE. VTINY) THEN
                     !
-                    RODS(0, I, J) = 0.0_RK
-                    RODS(1, I, J) = 0.0_RK
-                    RODS(2, I, J) = 0.0_RK
+                    RODS(0, I, J) = 0.0D0
+                    RODS(1, I, J) = 0.0D0
+                    RODS(2, I, J) = 0.0D0
                     !
                 ELSE                  
                     RODS(0, I, J) = (Q1 / S) * T
@@ -778,24 +778,24 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        QUAT = 0.0_RK
+        QUAT = 0.0D0
         !
         DO I = 0, (N - 1)
             !
             DO J = 0, (M - 1)
                 !
-                Q0 = 0.0_RK
-                Q1 = 0.0_RK
-                Q2 = 0.0_RK
-                Q3 = 0.0_RK
+                Q0 = 0.0D0
+                Q1 = 0.0D0
+                Q2 = 0.0D0
+                Q3 = 0.0D0
                 !
-                Q0 = 0.5_RK * SQRT(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
+                Q0 = 0.5D0 * DSQRT(1 + R(0, 0, I, J) + R(1, 1, I, J) + &
                     & R(2, 2, I, J))
-                Q1 = (-0.5_RK) * SQRT(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
+                Q1 = (-0.5D0) * DSQRT(1 + R(0, 0, I, J) - R(1, 1, I, J) - &
                     & R(2, 2, I, J))
-                Q2 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
+                Q2 = (-0.5D0) * DSQRT(1 - R(0, 0, I, J) + R(1, 1, I, J) - &
                     & R(2, 2, I, J))
-                Q3 = (-0.5_RK) * SQRT(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
+                Q3 = (-0.5D0) * DSQRT(1 - R(0, 0, I, J) - R(1, 1, I, J) + &
                     & R(2, 2, I, J))
                 !
                 IF (R(2, 1, I, J).LT.R(1, 2, I, J)) THEN
@@ -856,13 +856,13 @@ CONTAINS
         !
         !-----------------------------------------------------------------------
         !
-        R = 0.0_RK
+        R = 0.0D0
         !
         DO I = 0, (N - 1)
             !
             DO J = 0, (M - 1)
                 !
-                QBAR = 0.0_RK
+                QBAR = 0.0D0
                 QBAR = (QUAT(0, I, J) ** 2) - ((QUAT(1, I, J)  ** 2) + &
                     & (QUAT(2, I, J)  ** 2) + (QUAT(3, I, J)  ** 2))
                 !

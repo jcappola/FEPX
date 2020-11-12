@@ -88,11 +88,11 @@ CONTAINS
         !
     END DO
     !
-    DIAGONALS = 0.0_RK
+    DIAGONALS = 0.0D0
     !
     CALL PART_SCATTER(DIAGONALS, EDIAGONALS, NP, .FALSE., DTRACE)
     !
-    DIAGONALS = 1.0_RK / DIAGONALS
+    DIAGONALS = 1.0D0 / DIAGONALS
     !
     RETURN
     !
@@ -185,9 +185,9 @@ CONTAINS
     !
     ! CG iterations
     !
-    XNUMER_O = 1.0_RK
-    PU = 0.0_RK
-    ERROR = 1.0_RK
+    XNUMER_O = 1.0D0
+    PU = 0.0D0
+    ERROR = 1.0D0
     N_ITER = 0
     !
     DO WHILE (ERROR .GT. TOL)
@@ -206,7 +206,7 @@ CONTAINS
         !
         BETA = XNUMER / XNUMER_O
         !
-        IF (N_ITER .EQ. 1) BETA = 0.0_RK
+        IF (N_ITER .EQ. 1) BETA = 0.0D0
         !
         XNUMER_O = XNUMER
         !
@@ -229,7 +229,7 @@ CONTAINS
         !
         CALL PAR_SUM(PART_ERROR, ERROR)
         !
-        ERROR = SQRT(ERROR) / MAG
+        ERROR = DSQRT(ERROR) / MAG
         !
     END DO
     !
@@ -237,7 +237,7 @@ CONTAINS
     !
     CALL PAR_SUM(PART_RES_NORM, RES_NORM)
     !
-    RES_NORM = (RES_NORM) ** 0.5_RK
+    RES_NORM = (RES_NORM) ** 0.5D0
     !
     CG_SOLVER_EBE = N_ITER
     !

@@ -256,10 +256,10 @@ CONTAINS
         !
         ! Initialize areas and load arrays
         !
-        SURF_LOAD_ARRAY = 0.0_RK
-        CURR_LOAD = 0.0_RK
-        AREA = 0.0_RK
-        AREA0 = 0.0_RK
+        SURF_LOAD_ARRAY = 0.0D0
+        CURR_LOAD = 0.0D0
+        AREA = 0.0D0
+        AREA0 = 0.0D0
         !
         ! Compute initial area (area0)
         !
@@ -278,8 +278,8 @@ CONTAINS
         !
         ! Initialize state
         !
-        E_ELAS_KK_BAR = 0.0_RK
-        SIG_VEC_N = 0.0_RK
+        E_ELAS_KK_BAR = 0.0D0
+        SIG_VEC_N = 0.0D0
         C_ANGS = C0_ANGS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
@@ -291,8 +291,8 @@ CONTAINS
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
             ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-            ELVOL = 0.0_RK
-            ELVOL_0 = 0.0_RK
+            ELVOL = 0.0D0
+            ELVOL_0 = 0.0D0
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL_0, ECOORDS)
             !
@@ -300,21 +300,21 @@ CONTAINS
         !
         ! Initialize integrated quantities
         !
-        GAMMA = 0.0_RK
-        EQPLSTRAIN = 0.0_RK
-        EQSTRAIN   = 0.0_RK
+        GAMMA = 0.0D0
+        EQPLSTRAIN = 0.0D0
+        EQSTRAIN   = 0.0D0
         !
         ! Initialize deformation control
         !
         INCR = 0
-        TIME = 0.0_RK
+        TIME = 0.0D0
         ISTEP = 1
         INCR = 0
         STEP_COMPLETE = .FALSE.
         DTIME = TIME_STEP(1)   
         S_PERT_MAG = MIN_PERT_FRAC*ABS(INITIAL_VEL)
         T_PERT_MAG = MIN_PERT_FRAC*ABS(INITIAL_VEL)
-        CURR_EQSTRAIN = 0.0_RK
+        CURR_EQSTRAIN = 0.0D0
         !
         ! Estimate bulk elastic moduli
         ! Assume uniform texture and equal element volumes
@@ -411,7 +411,7 @@ CONTAINS
         !
         ! Initialize shear rates
         !
-        GAMMADOT = 0.0_RK
+        GAMMADOT = 0.0D0
         !
         CONVERGED_SOLUTION = .TRUE.
         !
@@ -756,13 +756,13 @@ CONTAINS
         !        
         DO II = 1, 3
             !
-            MACRO_ENG_STRAIN(II) = LENGTH(II) / LENGTH0(II) - 1.0_RK
+            MACRO_ENG_STRAIN(II) = LENGTH(II) / LENGTH0(II) - 1.0D0
             !
         END DO
         !
         ! Calculate the current increment macroscopic eqstrain
         !
-        CURR_EQSTRAIN = (2. / 3. ) * SQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
+        CURR_EQSTRAIN = (2. / 3. ) * DSQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
             & + (MACRO_ENG_STRAIN(2) ** 2) + (MACRO_ENG_STRAIN(3) ** 2))/2))
         !
         ! Print the macroscopic strain values to console for monitoring
@@ -1025,7 +1025,7 @@ CONTAINS
     NSTEPS = TRIAXCSR_OPTIONS%NUMBER_OF_CSR_LOAD_STEPS
     PRIMARY_DIR = BCS_OPTIONS%LOADING_DIRECTION + 1
     USER_STRAIN_RATE = BCS_OPTIONS%STRAIN_RATE
-    DIFF_STRESS = 0.0_RK
+    DIFF_STRESS = 0.0D0
     !
     ! Allocate the arrays for the load target sequence.
     !
@@ -1122,13 +1122,13 @@ CONTAINS
             !
             DIFF_STRESS = (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I,PRIMARY_DIR))
             !
-            IF (DIFF_STRESS .GT. 0.0_RK) THEN
+            IF (DIFF_STRESS .GT. 0.0D0) THEN
                 !
                 IS_SIGNED(I)   = .FALSE.
                 TARGET_SIGN(I) = 1
                 !VEL_FACTOR(I)  = 1
                 !
-            ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+            ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                 !
                 IS_SIGNED(I) = .TRUE.
                 TARGET_SIGN(I) = -1
@@ -1163,12 +1163,12 @@ CONTAINS
             DIFF_STRESS = (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I,PRIMARY_DIR)) &
                 & - (TRIAXCSR_OPTIONS%TARGET_CSR_LOAD(I-1,PRIMARY_DIR))
             !
-            IF (DIFF_STRESS .GT. 0.0_RK) THEN
+            IF (DIFF_STRESS .GT. 0.0D0) THEN
                 !
                 IS_SIGNED(I)   = .FALSE.
                 TARGET_SIGN(I) = 1
                 !
-            ELSE IF (DIFF_STRESS .LT. 0.0_RK) THEN
+            ELSE IF (DIFF_STRESS .LT. 0.0D0) THEN
                 !                
                 IS_SIGNED(I) = .TRUE.
                 TARGET_SIGN(I) = -1

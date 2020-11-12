@@ -19,7 +19,7 @@ MODULE RSTARN_SOLVE_MOD
 !
 ! From libf95:
 !
-USE LIBF95, ONLY: RK => REAL_KIND, RK_ZERO, RK_ONE, STDERR => STANDARD_ERROR
+USE LIBF95, ONLY: RK => REAL_KIND, STDERR => STANDARD_ERROR
 !
 USE DIMENSIONS_MOD
 USE HARDENING_MOD
@@ -54,7 +54,7 @@ CHARACTER(LEN=128) :: MESSAGE
 ! Note: The equation should be quadratic for the usual hardening model,
 !   and so it should only require one iteration.
 !
-REAL(RK), PARAMETER :: TOLER_HARD = 1.0e-4_RK, LS_CUTOFF = 0.001_RK
+REAL(RK), PARAMETER :: TOLER_HARD = 1.0D-4, LS_CUTOFF = 0.001D0
 INTEGER, PARAMETER  :: MAX_ITER_HARD = 10
 !
 CONTAINS
@@ -155,9 +155,9 @@ CONTAINS
     !
     ! Initialize the outputs
     !    
-    SHRATE(:,:)  = 0.0_RK
-    WP_SS(:,:,:) = 0.0_RK
-    SHEAR(:,:,:) = 0.0_RK
+    SHRATE(:,:)  = 0.0D0
+    WP_SS(:,:,:) = 0.0D0
+    SHEAR(:,:,:) = 0.0D0
     !
     DO IPHASE = 1, NUMPHASES
         !
@@ -316,7 +316,7 @@ CONTAINS
         !       
         WHERE (MY_PHASE.EQ.IPHASE)
             !          
-            WHERE(SHRATE .GT. RK_ZERO)
+            WHERE(SHRATE .GT. 0.0D0)
                 !
                 CRSS_SAT = CRYSTAL_PARM(4,IPHASE) &
                     & * ((SHRATE / CRYSTAL_PARM(6,IPHASE)) &
@@ -424,7 +424,7 @@ CONTAINS
         !
         ! Patch to avoid divide-by-zero exception
         !
-        WHERE (ABS(RES_N) == RK_ZERO)
+        WHERE (ABS(RES_N) == 0.0D0)
             !
             CONVERGED = .TRUE.
             !
@@ -453,19 +453,19 @@ CONTAINS
             !        
         ELSEWHERE
             !
-            RATIO_RES = RK_ZERO
+            RATIO_RES = 0.0D0
             !        
         ENDWHERE
         !
         ! Line search
         !
-        FJ31 = RK_ONE
+        FJ31 = 1.0D0
         !
-        DO WHILE (ANY(RATIO_RES .GT. RK_ONE &
+        DO WHILE (ANY(RATIO_RES .GT. 1.0D0 &
             & .AND. NEWTON_OK .AND. .NOT. CONVERGED))
             !
-            WHERE (RATIO_RES .GT. RK_ONE &
-                & .AND. NEWTON_OK .AND. .NOT. CONVERGED) FJ31 = FJ31 * 0.5_RK
+            WHERE (RATIO_RES .GT. 1.0D0 &
+                & .AND. NEWTON_OK .AND. .NOT. CONVERGED) FJ31 = FJ31 * 0.5D0
             !            
             ! Find where the newton_ok criterion is not satisfied
             !
@@ -476,7 +476,7 @@ CONTAINS
             CALL HARD_LAW(HARD_RATE, DHARD_RATE, XLAM, CRSS_SAT, SHEAR, &
                 & SHRATE, EPSEFF, 1, IHARD, N, M)
             ! 
-            WHERE (RATIO_RES .GT. RK_ONE .AND. NEWTON_OK .AND. .NOT. CONVERGED)
+            WHERE (RATIO_RES .GT. 1.0D0 .AND. NEWTON_OK .AND. .NOT. CONVERGED)
                 !            
                 RES = - (XLAM - CRSS_0 - DTIME * HARD_RATE)
                 RATIO_RES = ABS(RES) / ABS(RES_N)
@@ -679,7 +679,7 @@ CONTAINS
     !
     ! Compute : c = c_0 * rstar
     !
-    C_AUX = 0.0_RK
+    C_AUX = 0.0D0
     !
     ! RC 3/24/2016: Reordered for better memory striding
     DO J = 0, DIMS1

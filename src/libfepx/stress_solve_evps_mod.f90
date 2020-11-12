@@ -187,7 +187,7 @@ CONTAINS
     REAL(RK), POINTER :: WP_X_E_TMP(:,:,:) => NULL()
     REAL(RK), POINTER :: FJAC_TMP(:,:,:,:) => NULL()
     !   
-    REAL(RK), PARAMETER :: ONE_DP = 1.0_RK
+    REAL(RK), PARAMETER :: ONE_DP = 1.0D0
     REAL(RK) :: UFLOW = TINY(ONE_DP)
     REAL(RK) :: TOOSMALL(NUMPHASES)
     !
@@ -205,18 +205,18 @@ CONTAINS
     ! 
     IRC   = 0
     JITER = 0
-    SIG_0 = 0.0_RK
+    SIG_0 = 0.0D0
     NEWTON_OK = .TRUE.
     !
     NM  = N * M
-    C1  = 1.0_RK / DT
+    C1  = 1.0D0 / DT
     !
     ! e_bar_vec {5} --> e_bar [3x3]sym
     !
     CALL VEC_MAT_SYMM_GRN(E_BAR_VEC, E_BAR, N, M)
     !
-    GDOT = 0.0_RK
-    DGDOT = 0.0_RK
+    GDOT = 0.0D0
+    DGDOT = 0.0D0
     !      
     ! Begin iterations
     !   
@@ -260,8 +260,8 @@ CONTAINS
             ! Added parameter check for anisotropic rate sensitivity
             IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                 !
-                XNN(IPHASE) = 1.0_RK / CRYSTAL_PARM(0,IPHASE)
-                XN(IPHASE)  = XNN(IPHASE) - 1.0_RK
+                XNN(IPHASE) = 1.0D0 / CRYSTAL_PARM(0,IPHASE)
+                XN(IPHASE)  = XNN(IPHASE) - 1.0D0
                 TOOSMALL(IPHASE) = UFLOW**CRYSTAL_PARM(0,IPHASE)
                 !
             ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
@@ -270,15 +270,15 @@ CONTAINS
                 ANISO_M_TEMP(3:5)  = CRYS_OPTIONS%ANISO_M(IPHASE,2)
                 ANISO_M_TEMP(6:17) = CRYS_OPTIONS%ANISO_M(IPHASE,3)
                 !
-                AXNN(:,IPHASE) = 1.0_RK / ANISO_M_TEMP(:)
-                AXN(:,IPHASE)  = AXNN(:,IPHASE) - 1.0_RK
+                AXNN(:,IPHASE) = 1.0D0 / ANISO_M_TEMP(:)
+                AXN(:,IPHASE)  = AXNN(:,IPHASE) - 1.0D0
                 ATOOSMALL(:,IPHASE) = UFLOW**ANISO_M_TEMP(:)
                 !
             END IF
             !
             DO ISLIP = 0, N_SLIP - 1
                 !         
-                TAU(:,INDICES) = 0.0_RK
+                TAU(:,INDICES) = 0.0D0
                 !                
                 DO I = 0, TVEC1
                     !
@@ -292,7 +292,7 @@ CONTAINS
                 IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                     !
                     WHERE (TAUA(:,INDICES) .LE. TOOSMALL(IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0_RK
+                        & TAUA(:,INDICES) = 0.0D0
                     !
                     FJ21(:,INDICES) = &
                         &CRYSTAL_PARM(1,IPHASE) * TAUA(:,INDICES)**XN(IPHASE)  
@@ -303,7 +303,7 @@ CONTAINS
                 ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                     !
                     WHERE (TAUA(:,INDICES) .LE. ATOOSMALL(ISLIP,IPHASE)) &
-                        & TAUA(:,INDICES) = 0.0_RK
+                        & TAUA(:,INDICES) = 0.0D0
                     !
                     FJ21(:,INDICES) = CRYSTAL_PARM(1,IPHASE) * &
                         &TAUA(:,INDICES)**AXN(ISLIP,IPHASE)  
@@ -407,7 +407,7 @@ CONTAINS
             ! Added parameter check for anisotropic rate sensitivity
             DO ISLIP = 0, N_SLIP - 1
                 !
-                TAU(:,INDICES) = 0.0_RK
+                TAU(:,INDICES) = 0.0D0
                 !               
                 DO I = 0, TVEC1
                     !
@@ -423,14 +423,14 @@ CONTAINS
                     IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .FALSE.) THEN
                         !
                         WHERE (TAUA(IN,INDICES) .LE. TOOSMALL(IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0_RK
+                            & TAUA(IN,INDICES) = 0.0D0
                         GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
                             &TAU(IN,:)*TAUA(IN,:)**XN(IPHASE) 
                         !
                     ELSE IF (CRYS_OPTIONS%USE_ANISO_M(IPHASE) .EQV. .TRUE.) THEN
                         !
                         WHERE (TAUA(IN,INDICES).LE.ATOOSMALL(ISLIP,IPHASE)) &
-                            & TAUA(IN,INDICES) = 0.0_RK
+                            & TAUA(IN,INDICES) = 0.0D0
                         GDOT(ISLIP, IN, :) = CRYSTAL_PARM(1,IPHASE)*&
                             &TAU(IN,:)*TAUA(IN,:)**AXN(ISLIP,IPHASE) 
                         !
@@ -472,13 +472,13 @@ CONTAINS
         !
         ! Line Search.
         !
-        FACT = 1.0_RK
+        FACT = 1.0D0
         RATIO_RES = RES / RES_N
         !
         DO WHILE(ANY(RATIO_RES .GT. 1.0 .AND. NEWTON_OK .AND. .NOT. CONVERGED))
             !
             WHERE(RATIO_RES .GT. 1.0 .AND. NEWTON_OK .AND. .NOT. CONVERGED) &
-                & FACT = FACT*0.5_RK
+                & FACT = FACT*0.5D0
             !
             IF(ANY(FACT .LT. 0.001)) THEN
                 !
@@ -524,7 +524,7 @@ CONTAINS
                 !
                 DO ISLIP = 0, N_SLIP - 1
                     !
-                    TAU(:,INDICES) = 0.0_RK
+                    TAU(:,INDICES) = 0.0D0
                     !                  
                     DO I = 0, TVEC1
                         !
@@ -807,7 +807,7 @@ CONTAINS
     GDOT_TMP=GDOT(:, :, INDICES)
     !    
     CALL VEC_MAT_SYMM(P_HAT_VEC, P_HAT, N_SLIP)
-    DP_HAT_TMP = 0.0_RK
+    DP_HAT_TMP = 0.0D0
     !
     CALL MAT_X_MAT3(E_ELAS_TMP, E_BAR_TMP, EE, N, NUMIND)
     !
@@ -974,7 +974,7 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     RHS = D_VEC_LAT - C1 * (E_VEC - E_BAR_VEC) - DP_HAT_VEC - WP_X_E
-    RES(:,INDICES) = 0.0_RK
+    RES(:,INDICES) = 0.0D0
     !
     DO I = 0, TVEC1
         !         
@@ -1045,8 +1045,8 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    TEMPJ = 0.0_RK
-    TEMPS = 0.0_RK
+    TEMPJ = 0.0D0
+    TEMPS = 0.0D0
     !
     ! RC 6/24/2016: Reordered loops for better memory striding      
     DO J = 0, TVEC1

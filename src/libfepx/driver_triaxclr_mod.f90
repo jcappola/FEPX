@@ -211,10 +211,10 @@ CONTAINS
         !
         ! Initialize areas and load arrays
         !
-        SURF_LOAD_ARRAY = 0.0_RK
-        CURR_LOAD = 0.0_RK
-        AREA = 0.0_RK
-        AREA0 = 0.0_RK
+        SURF_LOAD_ARRAY = 0.0D0
+        CURR_LOAD = 0.0D0
+        AREA = 0.0D0
+        AREA0 = 0.0D0
         !
         ! Compute initial area (AREA0)
         !
@@ -230,8 +230,8 @@ CONTAINS
         !
         ! Initialize state
         !
-        E_ELAS_KK_BAR = 0.0_RK
-        SIG_VEC_N = 0.0_RK
+        E_ELAS_KK_BAR = 0.0D0
+        SIG_VEC_N = 0.0D0
         C_ANGS = C0_ANGS
         !
         ! Initialize elvol arrays (and associated) iff it needs to be printed
@@ -243,8 +243,8 @@ CONTAINS
             ALLOCATE(ELVOL_0(EL_SUB1:EL_SUP1))
             ALLOCATE(ECOORDS(0:KDIM1, EL_SUB1:EL_SUP1))
             !
-            ELVOL = 0.0_RK
-            ELVOL_0 = 0.0_RK
+            ELVOL = 0.0D0
+            ELVOL_0 = 0.0D0
             CALL PART_GATHER(ECOORDS, COORDS, NODES, DTRACE)
             CALL CALC_ELVOL(ELVOL_0, ECOORDS)
             !
@@ -252,21 +252,21 @@ CONTAINS
         !
         ! Initialize integrated quantities
         !
-        EQPLSTRAIN = 0.0_RK
-        EQSTRAIN = 0.0_RK
-        GAMMA = 0.0_RK
+        EQPLSTRAIN = 0.0D0
+        EQSTRAIN = 0.0D0
+        GAMMA = 0.0D0
         !
         ! Initialize deformation control
         !
         INCR = 1
         ISTEP = 1
-        TIME = 0.0_RK
+        TIME = 0.0D0
         FIRST_INCR_IN_STEP = .TRUE.
         PREV_ACTION = DWELLING
         CURR_ACTION = DWELLING
-        INITIAL_LOAD_DWELL_VEL = 0.0_RK
-        INITIAL_UNLOAD_DWELL_VEL = 0.0_RK
-        CURR_EQSTRAIN = 0.0_RK
+        INITIAL_LOAD_DWELL_VEL = 0.0D0
+        INITIAL_UNLOAD_DWELL_VEL = 0.0D0
+        CURR_EQSTRAIN = 0.0D0
         !
         ! Print initial values
         !
@@ -341,7 +341,7 @@ CONTAINS
         !
         ! Initialize gammadots
         !
-        GAMMADOT = 0.0_RK
+        GAMMADOT = 0.0D0
         !
         ! If first increment in step, calculate time increment, number of
         !   increments in the step, and initialize increment counter. Check for
@@ -362,7 +362,7 @@ CONTAINS
             !
             IF (ISTEP .EQ. 1) THEN
                 !
-                I1_END_LOAD = 0.0_RK
+                I1_END_LOAD = 0.0D0
                 !
             ELSE
                 !
@@ -472,7 +472,7 @@ CONTAINS
                 NINCR_STEP = MAX(NINT(DTIME_STEP / TARGET_TIME_INCR(ISTEP)), 1)
                 DTIME = DTIME_STEP / NINCR_STEP
                 INCR_COUNT = 1
-                DWELL_TIME_REMAINING = 0.0_RK
+                DWELL_TIME_REMAINING = 0.0D0
                 !
             ENDIF
             !
@@ -571,8 +571,8 @@ CONTAINS
         !
         IF (START_UNLOAD) THEN
             !
-            CURR_VEL = CURR_VEL / 10.0_RK
-            VELOCITY = VELOCITY / 10.0_RK
+            CURR_VEL = CURR_VEL / 10.0D0
+            VELOCITY = VELOCITY / 10.0D0
             !
         ENDIF
         !
@@ -646,7 +646,7 @@ CONTAINS
             ! Check if force is within range
             !
             IF ((ABS(CURR_LOAD(IDIR)-TARGET_LOAD(IDIR)) .LT. &
-                & MAX(LOAD_TOL(ISTEP), 0.1_RK * ABS(TARGET_LOAD(IDIR) - &
+                & MAX(LOAD_TOL(ISTEP), 0.1D0 * ABS(TARGET_LOAD(IDIR) - &
                 & INITIAL_LOAD(IDIR)))) .OR. START_DWELL .OR. START_RELOAD &
                 & .OR. (CURR_ACTION .EQ. UNLOADING)) THEN
                 !
@@ -662,11 +662,11 @@ CONTAINS
                     !
                     IF (CURR_ACTION .EQ. DWELLING) THEN
                         !
-                        VEL_SCALE_FACTOR = 0.9_RK
+                        VEL_SCALE_FACTOR = 0.9D0
                         !
                     ELSE
                         !
-                        VEL_SCALE_FACTOR = 1.1_RK
+                        VEL_SCALE_FACTOR = 1.1D0
                         !
                     ENDIF
                     !
@@ -707,12 +707,12 @@ CONTAINS
         !
         IF (START_DWELL) THEN
             !
-            PERT_MAG = 1e-6
+            PERT_MAG = 1.0D-6
             !
         ELSE
             !
-            PERT_MAG = MAX(0.1_RK * ABS(CURR_VEL(IDIR) - INITIAL_VEL(IDIR)), &
-                & 0.01_RK * ABS(CURR_VEL(IDIR)))
+            PERT_MAG = MAX(0.1D0 * ABS(CURR_VEL(IDIR) - INITIAL_VEL(IDIR)), &
+                & 0.01D0 * ABS(CURR_VEL(IDIR)))
             !
         ENDIF
         !
@@ -756,11 +756,11 @@ CONTAINS
                 !
                 IF (CURR_LOAD(PERT_DIR) .LT. TARGET_LOAD(PERT_DIR)) THEN
                     !
-                    PERT_SIGN = 1.0_RK
+                    PERT_SIGN = 1.0D0
                     !
                 ELSE
                     !
-                    PERT_SIGN = -1.0_RK
+                    PERT_SIGN = -1.0D0
                     !
                 ENDIF
                 !
@@ -943,13 +943,13 @@ CONTAINS
         !
         DO I = 1, 3
             !
-            MACRO_ENG_STRAIN(I) = LENGTH(I) / LENGTH0(I) - 1.0_RK
+            MACRO_ENG_STRAIN(I) = LENGTH(I) / LENGTH0(I) - 1.0D0
             !
         ENDDO
         !
         ! Calculate the current increment macroscopic eqstrain
         !
-        CURR_EQSTRAIN = (2. / 3. ) * SQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
+        CURR_EQSTRAIN = (2. / 3. ) * DSQRT( (3 * ((MACRO_ENG_STRAIN(1) ** 2) &
             & + (MACRO_ENG_STRAIN(2) ** 2) + (MACRO_ENG_STRAIN(3) ** 2))/2))
         !
         ! Print the macroscopic strain values to console for monitoring
@@ -1230,8 +1230,8 @@ CONTAINS
     !
     CONTROL_DIR = BCS_OPTIONS%LOADING_DIRECTION + 1
     RAMP_RATE = BCS_OPTIONS%LOAD_RATE
-    DWELL_TIME = 0.0_RK
-    TARGET_TIME_INCR = 0.0_RK
+    DWELL_TIME = 0.0D0
+    TARGET_TIME_INCR = 0.0D0
     LOAD_TOL = TRIAXCLR_OPTIONS%LOAD_TOL_ABS
     !
     STEP_RAMP_RATE = BCS_OPTIONS%LOAD_RATE
@@ -1324,7 +1324,7 @@ CONTAINS
                 !
                 ! Set the ramp rate to zero for dwell
                 !
-                RAMP_RATE(I)  = 0.0_RK
+                RAMP_RATE(I)  = 0.0D0
                 CONTROL_DIR(I) = -1 * CONTROL_DIR(I)
                 !
                 DWELL_TIME(I) = TRIAXCLR_OPTIONS%DWELL_EPISODE(IDWELL,2)

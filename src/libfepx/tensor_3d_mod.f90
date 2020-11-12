@@ -15,9 +15,6 @@ MODULE TENSOR_3D_MOD
 !
 ! From libf95:
 !
-USE CONSTANTS_MOD, ONLY: ZERO=>RK_ZERO, ONE=>RK_ONE, TWO=>RK_TWO, &
-    & HALF=>RK_ONE_HALF, THIRD=>RK_ONE_THIRD, ROOT_2=>RK_ROOT_2, &
-    & ROOT_6=>RK_ROOT_6
 USE INTRINSIC_TYPES_MOD, ONLY: RK=>REAL_KIND, IK=>INTEGER_KIND, &
     & LK=>LOGICAL_KIND
 !
@@ -36,9 +33,9 @@ INTEGER :: DECOMP_DFLT = DECOMP_MPSIM
 !
 ! Constants.
 !
-REAL(RK), PARAMETER :: SQ2_I = ONE / ROOT_2
-REAL(RK), PARAMETER :: SQ6_I = ONE / ROOT_6
-REAL(RK), PARAMETER :: TWOSQ6_I = TWO * ROOT_6
+REAL(RK), PARAMETER :: SQ2_I = 1.0D0 / DSQRT(2.0D0)
+REAL(RK), PARAMETER :: SQ6_I = 1.0D0 / DSQRT(6.0D0)
+REAL(RK), PARAMETER :: TWOSQ6_I = 2.0D0 * DSQRT(6.0D0)
 !
 ! Public
 !
@@ -70,7 +67,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    MAT = ZERO
+    MAT = 0.0D0
     !
     IF (PRESENT(DEV)) THEN
         !
@@ -190,15 +187,15 @@ CONTAINS
         !
         CASE (DECOMP_MPSIM)
             !
-            SKW(1, :) = HALF * (MAT(3, 2, :) - MAT(2, 3, :))
-            SKW(2, :) = HALF * (MAT(1, 3, :) - MAT(3, 1, :))
-            SKW(3, :) = HALF * (MAT(2, 1, :) - MAT(1, 2, :))
+            SKW(1, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
+            SKW(2, :) = 0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
             !
         CASE (DECOMP_FEMEVPS)
             !
-            SKW(1, :) = HALF * (MAT(2, 1, :) - MAT(1, 2, :))
-            SKW(2, :) = -HALF * (MAT(1, 3, :) - MAT(3, 1, :))
-            SKW(3, :) = HALF * (MAT(3, 2, :) - MAT(2, 3, :))
+            SKW(1, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
+            SKW(2, :) = -0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
             !
         CASE DEFAULT
             !
@@ -210,7 +207,7 @@ CONTAINS
     !
     IF (PRESENT(SPH)) THEN
         !
-        SPH = (MAT(1, 1, :) + MAT(2, 2, :) + MAT(3, 3, :)) * THIRD
+        SPH = (MAT(1, 1, :) + MAT(2, 2, :) + MAT(3, 3, :)) * (1.0D0 / 3.0D0)
         !
     END IF
     !

@@ -179,7 +179,7 @@ CONTAINS
         !
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
-        ZETA = 1.0_RK - XI - ETA
+        ZETA = 1.0D0 - XI - ETA
         !
         ! Nodal locations:
         !
@@ -228,15 +228,15 @@ CONTAINS
         !
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
-        ZETA = 1.0_RK - XI - ETA
+        ZETA = 1.0D0 - XI - ETA
         !
-        GRAD(1, 1, I) = 1.0_RK
-        GRAD(1, 2, I) = 0.0_RK
-        GRAD(1, 3, I) = -1.0_RK
+        GRAD(1, 1, I) = 1.0D0
+        GRAD(1, 2, I) = 0.0D0
+        GRAD(1, 3, I) = -1.0D0
         !
-        GRAD(2, 1, I) = 0.0_RK
-        GRAD(2, 2, I) = 1.0_RK
-        GRAD(2, 3, I) = -1.0_RK
+        GRAD(2, 1, I) = 0.0D0
+        GRAD(2, 2, I) = 1.0D0
+        GRAD(2, 3, I) = -1.0D0
         !
     END DO
     !
@@ -276,10 +276,10 @@ CONTAINS
         XI  = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        VALUE(1, I) = (1.0_RK - XI) * (1.0_RK - ETA)
-        VALUE(2, I) = XI * (1.0_RK - ETA)
+        VALUE(1, I) = (1.0D0 - XI) * (1.0D0 - ETA)
+        VALUE(2, I) = XI * (1.0D0 - ETA)
         VALUE(3, I) = XI * ETA
-        VALUE(4, I) = (1.0_RK - XI) * ETA
+        VALUE(4, I) = (1.0D0 - XI) * ETA
         !
     END DO
     !
@@ -319,15 +319,15 @@ CONTAINS
         XI  = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        GRAD(1,1, I) = ETA - 1.0_RK
-        GRAD(1,2, I) = 1.0_RK - ETA
+        GRAD(1,1, I) = ETA - 1.0D0
+        GRAD(1,2, I) = 1.0D0 - ETA
         GRAD(1,3, I) = ETA
         GRAD(1,4, I) = -ETA
         !
-        GRAD(2,1, I) = XI - 1.0_RK
+        GRAD(2,1, I) = XI - 1.0D0
         GRAD(2,2, I) = -XI
         GRAD(2,3, I) = XI
-        GRAD(2,4, I) = 1.0_RK - XI
+        GRAD(2,4, I) = 1.0D0 - XI
         !
     END DO
     !
@@ -367,19 +367,19 @@ CONTAINS
         !
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
-        ZETA = 1.0_RK - XI - ETA
+        ZETA = 1.0D0 - XI - ETA
         !
         ! Nodal locations:
         ! 3
         ! 42
         ! 561
         !
-        VALUE(1, I) = (2.0_RK * XI - 1.0_RK) * XI
-        VALUE(2, I) = 4.0_RK * ETA * XI
-        VALUE(3, I) = (2.0_RK * ETA - 1.0_RK) * ETA
-        VALUE(4, I) = 4.0_RK * ETA * ZETA
-        VALUE(5, I) = (2.0_RK * ZETA - 1.0_RK) * ZETA
-        VALUE(6, I) = 4.0_RK * XI * ZETA
+        VALUE(1, I) = (2.0D0 * XI - 1.0D0) * XI
+        VALUE(2, I) = 4.0D0 * ETA * XI
+        VALUE(3, I) = (2.0D0 * ETA - 1.0D0) * ETA
+        VALUE(4, I) = 4.0D0 * ETA * ZETA
+        VALUE(5, I) = (2.0D0 * ZETA - 1.0D0) * ZETA
+        VALUE(6, I) = 4.0D0 * XI * ZETA
         !
     END DO
     !
@@ -419,21 +419,21 @@ CONTAINS
         !
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
-        ZETA = 1.0_RK - XI - ETA
+        ZETA = 1.0D0 - XI - ETA
         !
-        GRAD(1, 1, I) = 4.0_RK * XI - 1.0_RK
-        GRAD(1, 2, I) = 4.0_RK * ETA
-        GRAD(1, 3, I) = 0.0_RK
-        GRAD(1, 4, I) = -4.0_RK * ETA
-        GRAD(1, 5, I) = -4.0_RK * ZETA + 1.0_RK
-        GRAD(1, 6, I) = 4.0_RK * ZETA - 4.0_RK * XI
+        GRAD(1, 1, I) = 4.0D0 * XI - 1.0D0
+        GRAD(1, 2, I) = 4.0D0 * ETA
+        GRAD(1, 3, I) = 0.0D0
+        GRAD(1, 4, I) = -4.0D0 * ETA
+        GRAD(1, 5, I) = -4.0D0 * ZETA + 1.0D0
+        GRAD(1, 6, I) = 4.0D0 * ZETA - 4.0D0 * XI
         !
-        GRAD(2, 1, I) = 0.0_RK
-        GRAD(2, 2, I) = 4.0_RK * XI
-        GRAD(2, 3, I) = 4.0_RK * ETA - 1.0_RK
-        GRAD(2, 4, I) = 4.0_RK * ZETA - 4.0_RK * ETA
-        GRAD(2, 5, I) = -4.0_RK * ZETA + 1.0_RK
-        GRAD(2, 6, I) = -4.0_RK * XI
+        GRAD(2, 1, I) = 0.0D0
+        GRAD(2, 2, I) = 4.0D0 * XI
+        GRAD(2, 3, I) = 4.0D0 * ETA - 1.0D0
+        GRAD(2, 4, I) = 4.0D0 * ZETA - 4.0D0 * ETA
+        GRAD(2, 5, I) = -4.0D0 * ZETA + 1.0D0
+        GRAD(2, 6, I) = -4.0D0 * XI
         !
     END DO
     !
@@ -473,17 +473,17 @@ CONTAINS
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        VALUE(1, I) = (1.0_RK - XI) * (1.0_RK - ETA) * (-2.0_RK * XI - 2.0_RK &
-            & * ETA + 1.0_RK)
-        VALUE(2, I) = 4.0_RK * XI * (1.0_RK - XI) * (1.0_RK - ETA)
-        VALUE(3, I) = XI * (1.0_RK - ETA) * (2.0_RK * XI - 2.0_RK * ETA - &
-            & 1.0_RK)
-        VALUE(4, I) = 4.0_RK * XI * ETA * (1.0_RK - ETA)
-        VALUE(5, I) = XI * ETA * (2.0_RK * XI + 2.0_RK * ETA - 3.0_RK)
-        VALUE(6, I) = 4.0_RK * XI * ETA * (1.0_RK - XI)
-        VALUE(7, I) = ETA * (1.0_RK - XI) * (-2.0_RK * XI + 2.0_RK * ETA - &
-            & 1.0_RK)
-        VALUE(8, I) = 4.0_RK * ETA * (1.0_RK - XI) * (1.0_RK - ETA)
+        VALUE(1, I) = (1.0D0 - XI) * (1.0D0 - ETA) * (-2.0D0 * XI - 2.0D0 &
+            & * ETA + 1.0D0)
+        VALUE(2, I) = 4.0D0 * XI * (1.0D0 - XI) * (1.0D0 - ETA)
+        VALUE(3, I) = XI * (1.0D0 - ETA) * (2.0D0 * XI - 2.0D0 * ETA - &
+            & 1.0D0)
+        VALUE(4, I) = 4.0D0 * XI * ETA * (1.0D0 - ETA)
+        VALUE(5, I) = XI * ETA * (2.0D0 * XI + 2.0D0 * ETA - 3.0D0)
+        VALUE(6, I) = 4.0D0 * XI * ETA * (1.0D0 - XI)
+        VALUE(7, I) = ETA * (1.0D0 - XI) * (-2.0D0 * XI + 2.0D0 * ETA - &
+            & 1.0D0)
+        VALUE(8, I) = 4.0D0 * ETA * (1.0D0 - XI) * (1.0D0 - ETA)
         !
     END DO
     !
@@ -523,25 +523,25 @@ CONTAINS
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        GRAD(1, 1, I) = -1.0_RK * (1.0_RK - ETA) * (3.0_RK - 4.0_RK * XI - &
-            & 2.0_RK * ETA)
-        GRAD(1, 2, I) = 4.0_RK * (1.0_RK - ETA) * (1.0_RK - 2.0_RK * XI)
-        GRAD(1, 3, I) = (1.0_RK - ETA) * (4.0_RK * XI - 2.0_RK * ETA - 1.0_RK)
-        GRAD(1, 4, I) = 4.0_RK * ETA * (1.0_RK - ETA)
-        GRAD(1, 5, I) = ETA * (4.0_RK * XI + 2.0_RK * ETA - 3.0_RK)
-        GRAD(1, 6, I) = 4.0_RK * ETA * (1.0_RK - 2.0_RK * XI)
-        GRAD(1, 7, I) = -ETA * (-4.0_RK * XI + 2.0_RK * ETA + 1.0_RK)
-        GRAD(1, 8, I) = -4.0_RK * ETA * (1.0_RK - ETA)
+        GRAD(1, 1, I) = -1.0D0 * (1.0D0 - ETA) * (3.0D0 - 4.0D0 * XI - &
+            & 2.0D0 * ETA)
+        GRAD(1, 2, I) = 4.0D0 * (1.0D0 - ETA) * (1.0D0 - 2.0D0 * XI)
+        GRAD(1, 3, I) = (1.0D0 - ETA) * (4.0D0 * XI - 2.0D0 * ETA - 1.0D0)
+        GRAD(1, 4, I) = 4.0D0 * ETA * (1.0D0 - ETA)
+        GRAD(1, 5, I) = ETA * (4.0D0 * XI + 2.0D0 * ETA - 3.0D0)
+        GRAD(1, 6, I) = 4.0D0 * ETA * (1.0D0 - 2.0D0 * XI)
+        GRAD(1, 7, I) = -ETA * (-4.0D0 * XI + 2.0D0 * ETA + 1.0D0)
+        GRAD(1, 8, I) = -4.0D0 * ETA * (1.0D0 - ETA)
         !
-        GRAD(2, 1, I) = -1.0_RK * (1.0_RK - XI) * (3.0_RK - 4.0_RK * ETA - &
-            & 2.0_RK * XI)
-        GRAD(2, 2, I) = -4.0_RK * XI * (1.0_RK - XI)
-        GRAD(2, 3, I) = -XI * (2.0_RK * XI - 4.0_RK * ETA + 1.0_RK)
-        GRAD(2, 4, I) = 4.0_RK * XI * (1.0_RK - 2.0_RK * ETA)
-        GRAD(2, 5, I) = XI * (2.0_RK * XI + 4.0_RK * ETA - 3.0_RK)
-        GRAD(2, 6, I) = 4.0_RK * XI * (1.0_RK - XI)
-        GRAD(2, 7, I) = (1.0_RK - XI) * (-2.0_RK * XI + 4.0_RK * ETA - 1.0_RK)
-        GRAD(2, 8, I) = 4.0_RK * (1.0_RK - XI) * (1.0_RK - 2.0_RK * ETA)
+        GRAD(2, 1, I) = -1.0D0 * (1.0D0 - XI) * (3.0D0 - 4.0D0 * ETA - &
+            & 2.0D0 * XI)
+        GRAD(2, 2, I) = -4.0D0 * XI * (1.0D0 - XI)
+        GRAD(2, 3, I) = -XI * (2.0D0 * XI - 4.0D0 * ETA + 1.0D0)
+        GRAD(2, 4, I) = 4.0D0 * XI * (1.0D0 - 2.0D0 * ETA)
+        GRAD(2, 5, I) = XI * (2.0D0 * XI + 4.0D0 * ETA - 3.0D0)
+        GRAD(2, 6, I) = 4.0D0 * XI * (1.0D0 - XI)
+        GRAD(2, 7, I) = (1.0D0 - XI) * (-2.0D0 * XI + 4.0D0 * ETA - 1.0D0)
+        GRAD(2, 8, I) = 4.0D0 * (1.0D0 - XI) * (1.0D0 - 2.0D0 * ETA)
         !
     END DO
     !
@@ -581,23 +581,23 @@ CONTAINS
         XI  = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        VALUE(1, I) = (2.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - 1.0_RK) * (XI - &
-            & 1.0_RK) * (ETA - 1.0_RK)
-        VALUE(2, I) = 4.0_RK * XI * (1.0_RK - XI) * (ETA - 1.0_RK) * (2.0_RK * &
-            & ETA - 1.0_RK)
-        VALUE(3, I) = XI * (2.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - 1.0_RK) * &
-            & (ETA - 1.0_RK)
-        VALUE(4, I) = 4.0_RK * XI * ETA * (2.0_RK * XI - 1.0_RK) * (1.0_RK - &
+        VALUE(1, I) = (2.0D0 * XI - 1.0D0) * (2.0D0 * ETA - 1.0D0) * (XI - &
+            & 1.0D0) * (ETA - 1.0D0)
+        VALUE(2, I) = 4.0D0 * XI * (1.0D0 - XI) * (ETA - 1.0D0) * (2.0D0 * &
+            & ETA - 1.0D0)
+        VALUE(3, I) = XI * (2.0D0 * XI - 1.0D0) * (2.0D0 * ETA - 1.0D0) * &
+            & (ETA - 1.0D0)
+        VALUE(4, I) = 4.0D0 * XI * ETA * (2.0D0 * XI - 1.0D0) * (1.0D0 - &
             & ETA)
-        VALUE(5, I) = XI * ETA * (2.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - &
-            & 1.0_RK)
-        VALUE(6, I) = 4.0_RK * XI * ETA * (1.0_RK - XI) * (2.0_RK * ETA - &
-            & 1.0_RK)
-        VALUE(7, I) = (XI - 1.0_RK) * (2.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - &
-            & 1.0_RK) * ETA
-        VALUE(8, I) = 4.0_RK * (2.0_RK * XI - 1.0_RK) * (XI - 1.0_RK) * &
-            & (1.0_RK - ETA) * ETA
-        VALUE(9, I) = 16.0_RK * XI * ETA * (1.0_RK - XI) * (1.0_RK - ETA)
+        VALUE(5, I) = XI * ETA * (2.0D0 * XI - 1.0D0) * (2.0D0 * ETA - &
+            & 1.0D0)
+        VALUE(6, I) = 4.0D0 * XI * ETA * (1.0D0 - XI) * (2.0D0 * ETA - &
+            & 1.0D0)
+        VALUE(7, I) = (XI - 1.0D0) * (2.0D0 * XI - 1.0D0) * (2.0D0 * ETA - &
+            & 1.0D0) * ETA
+        VALUE(8, I) = 4.0D0 * (2.0D0 * XI - 1.0D0) * (XI - 1.0D0) * &
+            & (1.0D0 - ETA) * ETA
+        VALUE(9, I) = 16.0D0 * XI * ETA * (1.0D0 - XI) * (1.0D0 - ETA)
         !
     END DO
     !
@@ -637,33 +637,33 @@ CONTAINS
         XI = PNTS(1, I)
         ETA = PNTS(2, I)
         !
-        GRAD(1, 1, I) = (4.0_RK * XI - 3.0_RK) * (2.0_RK * ETA - 1.0_RK) * &
-            & (ETA - 1.0_RK)
-        GRAD(1, 2, I) = 4.0_RK * (1.0_RK - 2.0_RK * XI) * (ETA - 1.0_RK) * &
-            & (2.0_RK * ETA - 1.0_RK)
-        GRAD(1, 3, I) = (4.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - 1.0_RK) * &
-            & (ETA - 1.0_RK)
-        GRAD(1, 4, I) = 4.0_RK * ETA * (4.0_RK * XI - 1.0_RK) * (1.0_RK - ETA)
-        GRAD(1, 5, I) = ETA * (4.0_RK * XI - 1.0_RK) * (2.0_RK * ETA - 1.0_RK)
-        GRAD(1, 6, I) = 4.0_RK * ETA * (1.0_RK - 2.0_RK * XI) * (2.0_RK * ETA &
-            & - 1.0_RK)
-        GRAD(1, 7, I) = (4.0_RK * XI - 3.0_RK) * (2.0_RK * ETA - 1.0_RK) * ETA
-        GRAD(1, 8, I) = 4.0_RK * ETA * (4.0_RK * XI - 3.0_RK) * (1.0_RK - ETA)
-        GRAD(1, 9, I) = 16.0_RK * (1.0_RK - 2.0_RK * XI) * (1.0_RK - ETA) * ETA
+        GRAD(1, 1, I) = (4.0D0 * XI - 3.0D0) * (2.0D0 * ETA - 1.0D0) * &
+            & (ETA - 1.0D0)
+        GRAD(1, 2, I) = 4.0D0 * (1.0D0 - 2.0D0 * XI) * (ETA - 1.0D0) * &
+            & (2.0D0 * ETA - 1.0D0)
+        GRAD(1, 3, I) = (4.0D0 * XI - 1.0D0) * (2.0D0 * ETA - 1.0D0) * &
+            & (ETA - 1.0D0)
+        GRAD(1, 4, I) = 4.0D0 * ETA * (4.0D0 * XI - 1.0D0) * (1.0D0 - ETA)
+        GRAD(1, 5, I) = ETA * (4.0D0 * XI - 1.0D0) * (2.0D0 * ETA - 1.0D0)
+        GRAD(1, 6, I) = 4.0D0 * ETA * (1.0D0 - 2.0D0 * XI) * (2.0D0 * ETA &
+            & - 1.0D0)
+        GRAD(1, 7, I) = (4.0D0 * XI - 3.0D0) * (2.0D0 * ETA - 1.0D0) * ETA
+        GRAD(1, 8, I) = 4.0D0 * ETA * (4.0D0 * XI - 3.0D0) * (1.0D0 - ETA)
+        GRAD(1, 9, I) = 16.0D0 * (1.0D0 - 2.0D0 * XI) * (1.0D0 - ETA) * ETA
         !
-        GRAD(2, 1, I) = (2.0_RK * XI - 1.0_RK) * (4.0_RK * ETA - 3.0_RK) * (XI &
-            & - 1.0_RK)
-        GRAD(2, 2, I) = 4.0_RK * XI * (1.0_RK - XI) * (4.0_RK * ETA - 3.0_RK)
-        GRAD(2, 3, I) = XI * (2.0_RK * XI - 1.0_RK) * (4.0_RK * ETA - 3.0_RK)
-        GRAD(2, 4, I) = 4.0_RK * XI * (2.0_RK * XI - 1.0_RK) * (1.0_RK - &
-            & 2.0_RK * ETA)
-        GRAD(2, 5, I) = XI * (2.0_RK * XI - 1.0_RK) * (4.0_RK * ETA - 1.0_RK)
-        GRAD(2, 6, I) = 4.0_RK * XI * (1.0_RK - XI) * (4.0_RK * ETA - 1.0_RK)
-        GRAD(2, 7, I) = (XI - 1.0_RK) * (2.0_RK * XI - 1.0_RK) * (4.0_RK * ETA &
-            & - 1.0_RK)
-        GRAD(2, 8, I) = 4.0_RK * (2.0_RK * XI - 1.0_RK) * (XI - 1.0_RK) * &
-            & (1.0_RK - 2.0_RK * ETA)
-        GRAD(2, 9, I) = 16.0_RK * XI * (1.0_RK - XI) * (1.0_RK - 2.0_RK * ETA)
+        GRAD(2, 1, I) = (2.0D0 * XI - 1.0D0) * (4.0D0 * ETA - 3.0D0) * (XI &
+            & - 1.0D0)
+        GRAD(2, 2, I) = 4.0D0 * XI * (1.0D0 - XI) * (4.0D0 * ETA - 3.0D0)
+        GRAD(2, 3, I) = XI * (2.0D0 * XI - 1.0D0) * (4.0D0 * ETA - 3.0D0)
+        GRAD(2, 4, I) = 4.0D0 * XI * (2.0D0 * XI - 1.0D0) * (1.0D0 - &
+            & 2.0D0 * ETA)
+        GRAD(2, 5, I) = XI * (2.0D0 * XI - 1.0D0) * (4.0D0 * ETA - 1.0D0)
+        GRAD(2, 6, I) = 4.0D0 * XI * (1.0D0 - XI) * (4.0D0 * ETA - 1.0D0)
+        GRAD(2, 7, I) = (XI - 1.0D0) * (2.0D0 * XI - 1.0D0) * (4.0D0 * ETA &
+            & - 1.0D0)
+        GRAD(2, 8, I) = 4.0D0 * (2.0D0 * XI - 1.0D0) * (XI - 1.0D0) * &
+            & (1.0D0 - 2.0D0 * ETA)
+        GRAD(2, 9, I) = 16.0D0 * XI * (1.0D0 - XI) * (1.0D0 - 2.0D0 * ETA)
         !
     END DO
     !

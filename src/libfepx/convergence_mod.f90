@@ -32,25 +32,25 @@ TYPE CONVOPTIONSTYPE
     !
     ! Conjugate Gradient (CG)
     INTEGER :: CG_MAX_ITERS = 16000
-    REAL(RK) :: CG_TOL = 1E-8_RK
+    REAL(RK) :: CG_TOL = 1.0D-8
     !
     ! Global Nonlinear Iteration (NL)
     INTEGER :: NL_MAX_ITERS = 50
-    REAL(RK) :: NL_TOL_STRICT = 5E-4_RK
-    REAL(RK) :: NL_TOL_LOOSE = 5E-4_RK
-    REAL(RK) :: NL_TOL_MIN = 1E-10_RK
+    REAL(RK) :: NL_TOL_STRICT = 5.0D-4
+    REAL(RK) :: NL_TOL_LOOSE = 5.0D-4
+    REAL(RK) :: NL_TOL_MIN = 1.0D-10
     !
     ! Newton-Raphson
-    REAL(RK) :: NR_TOL_SWITCH_REF = 1.0E-2_RK
-    REAL(RK) :: NR_TOL_CONV = 0.2_RK
+    REAL(RK) :: NR_TOL_SWITCH_REF = 1.0D-2
+    REAL(RK) :: NR_TOL_CONV = 0.2D0
     !
     ! PACC (pressure acceleration: obsolete?)
-    REAL(RK) :: PACC = 1.0_RK
+    REAL(RK) :: PACC = 1.0D0
     !
     ! Single Crystal/ State Calculations (SX)
     INTEGER :: SX_MAX_ITERS_STATE = 100
     INTEGER :: SX_MAX_ITERS_NEWTON = 100
-    REAL(RK) :: SX_TOL = 1.0E-4
+    REAL(RK) :: SX_TOL = 1.0D-4
     !
 END TYPE CONVOPTIONSTYPE
 !

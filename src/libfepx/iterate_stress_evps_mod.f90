@@ -212,16 +212,16 @@ CONTAINS
     !
     ! Initialize ones arrays
     !
-    E_ONES = 1.0_RK
-    G_ONES = 0.0_RK
+    E_ONES = 1.0D0
+    G_ONES = 0.0D0
     !
     ! Scatter ones arrays and store multiplicity
     !
     CALL PART_SCATTER(G_ONES, E_ONES, NODES, .FALSE., DTRACE)
     !
     ! Initialization
-    R_NORM_O = 0.0_RK
-    DELU_NORM_O = 0.0_RK
+    R_NORM_O = 0.0D0
+    DELU_NORM_O = 0.0D0
     VEL_O = VEL
     VEL_SA = VEL
     !
@@ -229,7 +229,7 @@ CONTAINS
     !
     ITMETHOD_EVPS = 1
     CG_ITER_OUT = 0
-    D_NORM = 0.0_RK
+    D_NORM = 0.0D0
     !
     ITER_CONVERGED = .FALSE.
     NR = .FALSE.
@@ -237,8 +237,8 @@ CONTAINS
     NR_SLOW = .FALSE.
     NR_ITER = 0
     NR_TOL_SWITCH = NR_TOL_SWITCH_REF
-    NR_CONV = 1.0_RK
-    NR_CONV_O = 1.0_RK
+    NR_CONV = 1.0D0
+    NR_CONV_O = 1.0D0
     IDIV = 0
     !
     ! Non linear iteration
@@ -261,77 +261,77 @@ CONTAINS
         E1 = 0
         E2 = 2
         ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         M = 3
         E1 = 2
         E2 = 4
         ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         M = 5
         E1 = 0
         E2 = 4
         ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         M = 6
         E1 = 0
         E2 = 9
         ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         M = 7
         E1 = 2
         E2 = 9
         ECOORDS(3*M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         M = 8
         E1 = 4
         E2 = 9
         ECOORDS(3 * M, EL_SUB1:EL_SUP1) = (ECOORDS(3 * E1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2,EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2,EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 1, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 1, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 1, EL_SUB1:EL_SUP1)) / 2.0D0
         ECOORDS(3 * M + 2, EL_SUB1:EL_SUP1) = &
             & (ECOORDS(3 * E1 + 2, EL_SUB1:EL_SUP1) + &
-            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0_RK
+            & ECOORDS(3 * E2 + 2, EL_SUB1:EL_SUP1)) / 2.0D0
         !
         ! Reset coordinates
         !
-        COORDS = 0.0_RK
+        COORDS = 0.0D0
         !
         ! Scatter e_coordinates
         !
@@ -349,9 +349,9 @@ CONTAINS
         CALL PART_GATHER(ECOORDS, TCOORDS, NODES, DTRACE)
         CALL PART_GATHER(EVEL, VEL, NODES, DTRACE)
         !
-        ESTIFF = 0.0_RK
-        ETANSTIFF = 0.0_RK
-        EFORCE = 0.0_RK
+        ESTIFF = 0.0D0
+        ETANSTIFF = 0.0D0
+        EFORCE = 0.0D0
         FORCE  = PFORCE !PFORCE=0
         TC_ANGS = SPREAD(C_ANGS, 5, NQPT)
         TRSTAR = SPREAD(RSTAR, 5, NQPT)
@@ -387,14 +387,14 @@ CONTAINS
         !
         ! Compute elemental norms
         !
-        ERESID = 0.0_RK
-        RESID = 0.0_RK
-        PART_R_NORM = 0.0_RK
-        R_NORM = 0.0_RK
-        PART_RX_NORM = 0.0_RK
-        RX_NORM = 0.0_RK
-        PART_F_NORM = 0.0_RK
-        F_NORM = 0.0_RK
+        ERESID = 0.0D0
+        RESID = 0.0D0
+        PART_R_NORM = 0.0D0
+        R_NORM = 0.0D0
+        PART_RX_NORM = 0.0D0
+        RX_NORM = 0.0D0
+        PART_F_NORM = 0.0D0
+        F_NORM = 0.0D0
         !
         CALL GEN_MATRIX_VECTOR_MULT(ERESID, ESTIFF, EVEL, 1, 2, 3, 4, IER)
         !
@@ -439,11 +439,11 @@ CONTAINS
         !
         WHERE (BCS)
             !
-            RESID = 0.0_RK
+            RESID = 0.0D0
             !
         END WHERE
         !
-        DELTA_VEL = 0.0_RK
+        DELTA_VEL = 0.0D0
         !
         IF (NR) THEN ! Use Newton-Raphson
             !
@@ -495,12 +495,12 @@ CONTAINS
         !
         ! Calculate velocity norm
         !
-        PART_DELU_NORM = 0.0_RK
-        DELU_NORM = 0.0_RK
-        PART_DELUX_NORM = 0.0_RK
-        DELUX_NORM = 0.0_RK
-        PART_U_NORM = 0.0_RK
-        U_NORM = 0.0_RK
+        PART_DELU_NORM = 0.0D0
+        DELU_NORM = 0.0D0
+        PART_DELUX_NORM = 0.0D0
+        DELUX_NORM = 0.0D0
+        PART_U_NORM = 0.0D0
+        U_NORM = 0.0D0
         !
         PART_DELU_NORM = SUM(DELTA_VEL * DELTA_VEL)
         CALL PAR_SUM(PART_DELU_NORM, DELU_NORM)

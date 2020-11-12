@@ -123,7 +123,7 @@ CONTAINS
     CG_MAX_ITERS = CV_OPTIONS%CG_MAX_ITERS
     CG_TOL = CV_OPTIONS%CG_TOL
     !
-    EPS_O = 1.0E+30_RK
+    EPS_O = 1.0D30
     VEL_O = VEL
     !
     CALL PART_GATHER(EVEL, VEL, NODES, DOF_TRACE)
@@ -142,10 +142,10 @@ CONTAINS
             !
         END IF
         !
-        ESTIFF = 0.0_RK
-        EFORCE = 0.0_RK
+        ESTIFF = 0.0D0
+        EFORCE = 0.0D0
         FORCE = PFORCE !PFORCE=0
-        EQPLAS_TR = 0.0_RK
+        EQPLAS_TR = 0.0D0
         !
         CALL ELEMENT_STIF_VP(ITYPE, ESTIFF, ECOORDS, EVEL, PSCALE, PCNST, &
             & QR5X5, WTS, EQPLAS_TR, EPSEFF, DTIME, INCR)
@@ -164,7 +164,7 @@ CONTAINS
         !
         WHERE (BCS)
             !
-            FORCE = 0.0_RK
+            FORCE = 0.0D0
             !
         END WHERE
         !
@@ -191,7 +191,7 @@ CONTAINS
         !
         CALL PAR_SUM(PART_U_NORM, U_NORM)
         !
-        U_NORM = SQRT(U_NORM)
+        U_NORM = DSQRT(U_NORM)
         !
         PART_X_NORM = MAXVAL(ABS(VEL_O - VEL))
         !
@@ -253,7 +253,7 @@ CONTAINS
     !
     ! Zero the forces where velocities are specified
     !
-    WHERE (BCS) FORCE = 0.0_RK
+    WHERE (BCS) FORCE = 0.0D0
     !
     ! Compute the velocity field (VEL) using the conjugate gradient method
     !
@@ -277,7 +277,7 @@ CONTAINS
     !
     CALL PAR_MAX(PART_DELOMAX, DELOMAX)
     !
-    IF (DELOMAX .EQ. 0.0) DELOMAX = 1.0_RK
+    IF (DELOMAX .EQ. 0.0) DELOMAX = 1.0D0
     !
     DEL = ABS((VEL_O - VEL) / DELOMAX)
     PART_P_NORM = MAXVAL(DEL)
@@ -328,7 +328,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    SUM = 0.0_RK
+    SUM = 0.0D0
     !
     DO I = 0, KDIM1
         !
