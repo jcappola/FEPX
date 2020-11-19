@@ -12,7 +12,6 @@ MODULE CRYSTAL_TYPE_MOD
 !
 ! Contains subroutines:
 ! SCHMIDTENSORS: Create Schmid tensors for specified crystal type
-! CRYSTALTYPEDESCRIBE: Print information about crystal type
 ! CRYSTALTYPEGET: Return deviatoric parts of Schmid tensors
 !
 ! Contains functions:
@@ -67,7 +66,6 @@ PUBLIC :: DECOMP_MPSIM
 PUBLIC :: DECOMP_FEMEVPS
 !
 PUBLIC :: CRYSTALTYPECREATE
-PUBLIC :: CRYSTALTYPEDESCRIBE
 PUBLIC :: CRYSTALTYPEGET
 !
 CONTAINS 
@@ -509,23 +507,6 @@ CONTAINS
     END SELECT
     !
     END SUBROUTINE SCHMIDTENSORS
-    !
-    !===========================================================================
-    !
-    SUBROUTINE CRYSTALTYPEDESCRIBE(SELF)
-    !
-    ! Print information about crystal type
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    ! SELF: This crystal type
-    !
-    TYPE(CRYSTALTYPETYPE) :: SELF
-    !
-    !---------------------------------------------------------------------------
-    !
-    END SUBROUTINE CRYSTALTYPEDESCRIBE
     !
     !===========================================================================
     !

@@ -1080,7 +1080,7 @@ CONTAINS
         !
         IF (UNIAXIAL_OPTIONS%STRAIN_RATE_JUMP(II,1) .EQ. -1) THEN
             !
-            CALL PAR_QUIT('Error  :     > Inputted `number_of_strain_rate_jumps`&
+            CALL PAR_QUIT('Error  :     > Input `number_of_strain_rate_jumps`&
                 & does not match number of defined `strain_rate_jumps`.')
             !
         END IF

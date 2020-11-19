@@ -492,7 +492,7 @@ CONTAINS
     !
     RETURN
     !
-    END SUBROUTINE solve_lin_sys_3
+    END SUBROUTINE SOLVE_LIN_SYS_3
     !
     !===========================================================================
     !
@@ -1004,9 +1004,6 @@ CONTAINS
     !
     ! Arguments:
     !
-    
-
-    
     LOGICAL, INTENT(IN) :: BCS(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(IN) :: PFORCE(DOF_SUB1:DOF_SUP1)
     REAL(RK), INTENT(INOUT) :: VELOCITY(DOF_SUB1:DOF_SUP1)
