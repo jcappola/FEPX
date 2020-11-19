@@ -47,7 +47,7 @@ USE READ_INPUT_MOD, ONLY: KDIM1, EL_SUB1, EL_SUP1, DOF_SUB1, DOF_SUP1, COORDS,&
     & UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET, PRINT_OPTIONS, NODES, &
     & READ_RESTART_FIELD, D_TOT, EL_WORK_N, EL_WORKP_N, EL_WORK_RATE_N, &
     & EL_WORKP_RATE_N, EL_WORK, EL_WORKP
-USE SURFACE_INFO_MOD, ONLY: NSURFACES, COMPUTE_AREA
+USE SURFACE_MOD, ONLY: NSURFACES, COMPUTE_AREA
 USE UNITS_MOD, ONLY: DFLT_U, FORCE_U1, FORCE_U2, FORCE_U3, FORCE_U4, FORCE_U5,&
     & FORCE_U6, CONV_U, OUNITS, REPORT_U
 USE WRITE_OUTPUT_MOD, ONLY: PRINT_STEP, WRITE_REPORT_FILE_COMPLETE_STEPS, &
@@ -1119,10 +1119,13 @@ CONTAINS
         WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
         WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
         WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', CURRENT_STEP
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', &
+            & CURRENT_STEP
         WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', CURRENT_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', PREV_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', &
+            & CURRENT_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', &
+            & PREV_LOAD
         !
     ENDIF
     !

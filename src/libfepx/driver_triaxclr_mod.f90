@@ -9,8 +9,8 @@ MODULE DRIVER_TRIAXCLR_MOD
 ! Contains subroutines:
 ! DRIVER_TRIAX_CLR: Driver for triaxial CLR simulation
 ! PROCESS_CTRL_DATA_CLR: Read input data for load control at constant load rate
-! READ_TRIAXCLR_RESTART: Read restart files for triaxial CLR simulations
 ! PRINT_HEADERS: Print headers to output files
+! READ_TRIAXCLR_RESTART: Read restart files for triaxial CLR simulations.
 !
 ! From libf95:
 !
@@ -23,10 +23,10 @@ USE DIMENSIONS_MOD
 USE DRIVER_UTILITIES_MOD
 USE FIBER_AVERAGE_MOD, ONLY: RUN_FIBER_AVERAGE
 USE KINEMATICS_MOD
-USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL
+USE MATRIX_OPERATIONS_MOD, ONLY: CALC_ELVOL, SOLVE_LIN_SYS_3
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD
-USE SURFACE_INFO_MOD
+USE SURFACE_MOD
 USE UNITS_MOD
 USE WRITE_OUTPUT_MOD
 !
@@ -1406,86 +1406,6 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_TRIAXCLR_RESTART(ISTEP, CURR_LOAD, PREV_LOAD, &
-        & FIRST_INCR_IN_STEP, INCR, TIME, SURF_LOAD_ARRAY, AREA, AREA0, &
-        & LENGTH, LENGTH0, CURR_VEL, PREV_ACTION, CURR_ACTION, &
-        & INITIAL_LOAD_DWELL_VEL, INITIAL_UNLOAD_DWELL_VEL)
-    !
-    ! Read TriaxCLR restart information.
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    !
-    LOGICAL, INTENT(OUT)  :: FIRST_INCR_IN_STEP
-    INTEGER, INTENT(OUT)  :: ISTEP
-    INTEGER, INTENT(OUT)  :: INCR
-    INTEGER, INTENT(OUT)  :: PREV_ACTION, CURR_ACTION
-    REAL(RK), INTENT(OUT) :: CURR_LOAD(3)
-    REAL(RK), INTENT(OUT) :: PREV_LOAD(3)
-    REAL(RK), INTENT(OUT) :: TIME
-    REAL(RK), INTENT(OUT) :: SURF_LOAD_ARRAY(NSURFACES,3)
-    REAL(RK), INTENT(OUT) :: AREA(NSURFACES)
-    REAL(RK), INTENT(OUT) :: AREA0(NSURFACES)
-    REAL(RK), INTENT(OUT) :: LENGTH(3), LENGTH0(3)
-    REAL(RK), INTENT(OUT) :: CURR_VEL(3)
-    REAL(RK), INTENT(OUT) :: INITIAL_LOAD_DWELL_VEL(3)
-    REAL(RK), INTENT(OUT) :: INITIAL_UNLOAD_DWELL_VEL(3)
-    !
-    ! Locals:
-    !
-    INTEGER :: MYUNIT
-    INTEGER :: ISURF
-    !
-    !---------------------------------------------------------------------------
-    !
-    MYUNIT = NEWUNITNUMBER()
-    OPEN(UNIT = MYUNIT, FILE = TRIM(OPTIONS%RSCTRL_IN), &
-        & FORM = 'UNFORMATTED', ACTION = 'READ')
-    !
-    READ(MYUNIT) ISTEP
-    READ(MYUNIT) CURR_LOAD
-    READ(MYUNIT) PREV_LOAD
-    READ(MYUNIT) FIRST_INCR_IN_STEP
-    READ(MYUNIT) INCR
-    READ(MYUNIT) TIME
-    !
-    DO ISURF = 1,NSURFACES
-        !
-        READ(MYUNIT) SURF_LOAD_ARRAY(ISURF, :)
-        !
-    ENDDO
-    !
-    READ(MYUNIT) AREA
-    READ(MYUNIT) AREA0
-    READ(MYUNIT) LENGTH
-    READ(MYUNIT) LENGTH0
-    READ(MYUNIT) CURR_VEL
-    READ(MYUNIT) PREV_ACTION
-    READ(MYUNIT) CURR_ACTION
-    READ(MYUNIT) INITIAL_LOAD_DWELL_VEL
-    READ(MYUNIT) INITIAL_UNLOAD_DWELL_VEL
-    !
-    IF (MYID .EQ. 0) THEN
-        !
-        WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
-        WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
-        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', ISTEP
-        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', CURR_LOAD
-        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', PREV_LOAD
-        !
-    ENDIF
-    !
-    CLOSE(MYUNIT)
-    !
-    RETURN
-    !
-    END SUBROUTINE READ_TRIAXCLR_RESTART
-    !
-    !===========================================================================
-    !
     SUBROUTINE PRINT_HEADERS()
     !
     ! Print output file headers. For debug purposes only - commented out above
@@ -1560,5 +1480,87 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE PRINT_HEADERS
+    !
+    !===========================================================================
+    !
+    SUBROUTINE READ_TRIAXCLR_RESTART(ISTEP, CURR_LOAD, PREV_LOAD, &
+        & FIRST_INCR_IN_STEP, INCR, TIME, SURF_LOAD_ARRAY, AREA, AREA0, &
+        & LENGTH, LENGTH0, CURR_VEL, PREV_ACTION, CURR_ACTION, &
+        & INITIAL_LOAD_DWELL_VEL, INITIAL_UNLOAD_DWELL_VEL)
+    !
+    ! Read TriaxCLR restart information.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    LOGICAL, INTENT(OUT)  :: FIRST_INCR_IN_STEP
+    INTEGER, INTENT(OUT)  :: ISTEP
+    INTEGER, INTENT(OUT)  :: INCR
+    INTEGER, INTENT(OUT)  :: PREV_ACTION, CURR_ACTION
+    REAL(RK), INTENT(OUT) :: CURR_LOAD(3)
+    REAL(RK), INTENT(OUT) :: PREV_LOAD(3)
+    REAL(RK), INTENT(OUT) :: TIME
+    REAL(RK), INTENT(OUT) :: SURF_LOAD_ARRAY(NSURFACES,3)
+    REAL(RK), INTENT(OUT) :: AREA(NSURFACES)
+    REAL(RK), INTENT(OUT) :: AREA0(NSURFACES)
+    REAL(RK), INTENT(OUT) :: LENGTH(3), LENGTH0(3)
+    REAL(RK), INTENT(OUT) :: CURR_VEL(3)
+    REAL(RK), INTENT(OUT) :: INITIAL_LOAD_DWELL_VEL(3)
+    REAL(RK), INTENT(OUT) :: INITIAL_UNLOAD_DWELL_VEL(3)
+    !
+    ! Locals:
+    !
+    INTEGER :: MYUNIT
+    INTEGER :: ISURF
+    !
+    !---------------------------------------------------------------------------
+    !
+    MYUNIT = NEWUNITNUMBER()
+    OPEN(UNIT = MYUNIT, FILE = TRIM(OPTIONS%RSCTRL_IN), &
+        & FORM = 'UNFORMATTED', ACTION = 'READ')
+    !
+    READ(MYUNIT) ISTEP
+    READ(MYUNIT) CURR_LOAD
+    READ(MYUNIT) PREV_LOAD
+    READ(MYUNIT) FIRST_INCR_IN_STEP
+    READ(MYUNIT) INCR
+    READ(MYUNIT) TIME
+    !
+    DO ISURF = 1,NSURFACES
+        !
+        READ(MYUNIT) SURF_LOAD_ARRAY(ISURF, :)
+        !
+    ENDDO
+    !
+    READ(MYUNIT) AREA
+    READ(MYUNIT) AREA0
+    READ(MYUNIT) LENGTH
+    READ(MYUNIT) LENGTH0
+    READ(MYUNIT) CURR_VEL
+    READ(MYUNIT) PREV_ACTION
+    READ(MYUNIT) CURR_ACTION
+    READ(MYUNIT) INITIAL_LOAD_DWELL_VEL
+    READ(MYUNIT) INITIAL_UNLOAD_DWELL_VEL
+    !
+    IF (MYID .EQ. 0) THEN
+        !
+        WRITE(DFLT_U,'(A)') 'Info   : Reading restart control information...'
+        WRITE(DFLT_U,'(A)') 'Info   :   - Restart parameters:'
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Increment:     ', INCR
+        WRITE(DFLT_U,'(A, I0)')       'Info   :     > Current Step:  ', ISTEP
+        WRITE(DFLT_U,'(A, E14.6)')    'Info   :     > Current Time:  ', TIME
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Current Load:  ', &
+            & CURR_LOAD
+        WRITE(DFLT_U,'(A, 3(E14.6))') 'Info   :     > Previous Load: ', &
+            & PREV_LOAD
+        !
+    ENDIF
+    !
+    CLOSE(MYUNIT)
+    !
+    RETURN
+    !
+    END SUBROUTINE READ_TRIAXCLR_RESTART
     !
 END MODULE DRIVER_TRIAXCLR_MOD

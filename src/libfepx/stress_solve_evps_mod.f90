@@ -25,6 +25,7 @@ USE INTRINSIC_TYPES_MOD, RK=>REAL_KIND
 !
 USE CONVERGENCE_MOD, ONLY: CV_OPTIONS
 USE DIMENSIONS_MOD
+USE KINEMATICS_MOD, ONLY: DP_WP_HAT
 USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
 USE READ_INPUT_MOD
@@ -700,86 +701,6 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE MATRIX_FJAC
-    !
-    !===========================================================================
-    !
-    SUBROUTINE DP_WP_HAT(P_HAT_VEC, DP_HAT, WP_HAT, E_ELAS, E_BAR, W_VEC_LAT, &
-        & GDOT, N_SLIP, DT, N, M, NUMIND, INDICES)
-    !
-    ! Add descriptions here.
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    !
-    INTEGER, INTENT(IN)   :: N_SLIP, N, M, NUMIND, INDICES(1:NUMIND)
-    REAL(RK), INTENT(OUT) :: DP_HAT(0:TVEC1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(OUT) :: WP_HAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: P_HAT_VEC(0:TVEC1,0:MAXSLIP1)
-    REAL(RK), INTENT(IN)  :: DT
-    REAL(RK), INTENT(IN)  :: E_ELAS(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: E_BAR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: W_VEC_LAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN)  :: GDOT(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
-    !
-    ! Locals:
-    !
-    INTEGER  :: I, ISLIP
-    REAL(RK) :: DP_HAT_TMP(0:TVEC1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: WP_HAT_TMP(0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: E_ELAS_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: E_BAR_TMP(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: W_VEC_LAT_TMP(0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: GDOT_TMP(0:MAXSLIP1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: P_HAT(0:DIMS1, 0:DIMS1, 0:MAXSLIP1)
-    REAL(RK) :: X (0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    REAL(RK) :: EE(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(NUMIND - 1))
-    !
-    !---------------------------------------------------------------------------
-    !    
-    E_ELAS_TMP=E_ELAS(:, :, :, INDICES)
-    E_BAR_TMP=E_BAR(:, :, :, INDICES)
-    W_VEC_LAT_TMP=W_VEC_LAT(:, :, INDICES)
-    GDOT_TMP=GDOT(:, :, INDICES)
-    !    
-    CALL VEC_MAT_SYMM(P_HAT_VEC, P_HAT, N_SLIP)
-    DP_HAT_TMP = 0.0D0
-    !
-    CALL MAT_X_MAT3(E_ELAS_TMP, E_BAR_TMP, EE, N, NUMIND)
-    !
-    WP_HAT_TMP(0, :, :) = W_VEC_LAT_TMP(0, :, :) + &
-        & 0.5 / DT * (EE(1, 0, :, :) - EE(0, 1, :, :))
-    WP_HAT_TMP(1, :, :) = W_VEC_LAT_TMP(1, :, :) + &
-        & 0.5 / DT * (EE(2, 0, :, :) - EE(0, 2, :, :))
-    WP_HAT_TMP(2, :, :) = W_VEC_LAT_TMP(2, :, :) + &
-        & 0.5 / DT * (EE(2, 1, :, :) - EE(1, 2, :, :))
-    !
-    DO ISLIP = 0, N_SLIP - 1
-        !
-        CALL MAT_X_MATS3(E_ELAS_TMP, P_HAT(0, 0, ISLIP), X, N, NUMIND)
-        !
-        WP_HAT_TMP(0, :, :) = WP_HAT_TMP(0, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(1, 0, :, :) - X(0, 1, :, :))
-        WP_HAT_TMP(1, :, :) = WP_HAT_TMP(1, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(2, 0, :, :) - X(0, 2, :, :))
-        WP_HAT_TMP(2, :, :) = WP_HAT_TMP(2, :, :) - &
-            & GDOT_TMP(ISLIP, :, :) * (X(2, 1, :, :) - X(1, 2, :, :))
-        !
-        DO I = 0, TVEC1
-            !        
-            DP_HAT_TMP(I, :, :) = DP_HAT_TMP(I, :, :) + &
-                & GDOT_TMP(ISLIP, :, :) * P_HAT_VEC(I, ISLIP)
-            !
-        ENDDO
-        !
-    ENDDO
-    !
-    DP_HAT(:,:,INDICES) = DP_HAT_TMP
-    WP_HAT(:, :, INDICES) = WP_HAT_TMP
-    !
-    RETURN
-    !
-    END SUBROUTINE DP_WP_HAT
     !
     !===========================================================================
     !

@@ -39,9 +39,7 @@ file(GLOB libfepx_src
     stiffness_vp_mod.f90
     stress_solve_evps_mod.f90
     stress_solve_vp_mod.f90
-    surface_info_mod.f90
     surface_mod.f90
-    tensor_3d_mod.f90
     units_mod.f90
     write_output_mod.f90
     )

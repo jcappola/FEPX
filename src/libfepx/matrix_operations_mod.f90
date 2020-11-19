@@ -36,10 +36,15 @@ MODULE MATRIX_OPERATIONS_MOD
 ! ROT_MAT_SKEW_SER: Serial version (one element).
 ! ROT_MAT_SYMM: Construct 5x5 rotation matrix acting on 5-vectors.
 ! ROT_MAT_SYMM_SER: Serial version (one element).
+! SOLVE_LIN_SYS_3: Solve a linear system of three equations. Used for triaxial
+!   loading.
 ! SPARSE_MATVEC_EBE: Matrix times vector, element by element
 ! SYMM_VGR: Compute symmetric part of an array of velocity gradients.
 ! SYMM_VGR_SER: Serial version (one element).
 ! SKEW_VGR: Compute skew part of an array of velocity gradients.
+! TENSOR3DCOMPOSE: Form matrix from deviatoric, skew, or spherical parts. If no
+!   parts are passed, the matix is zeroed.
+! TESNRO3DDECOMPOSE: Decompose matrix into deviatoric and spherical parts.
 ! VEC5_VEC6: Convert 5-vector to 6-vector of symmetric matrix.
 ! VEC_D_VEC5: Multiply diagonal matrix times array of vectors. (5 dim)
 ! VEC_MAT_SKEW: Convert array of 3-vectors to array of skew matrices.
@@ -64,6 +69,18 @@ USE SHAPE_3D_MOD
 USE GATHER_SCATTER_MOD
 !
 IMPLICIT NONE
+!
+! Parameters (some private, some public)
+!
+INTEGER, PARAMETER:: DECOMP_MPSIM = 0
+INTEGER, PARAMETER:: DECOMP_FEMEVPS = 1
+INTEGER, PRIVATE :: DECOMP_DFLT = DECOMP_MPSIM
+!
+! Constants (all private)
+!
+REAL(RK), PARAMETER, PRIVATE :: SQ2_I = 1.0D0 / DSQRT(2.0D0)
+REAL(RK), PARAMETER, PRIVATE :: SQ6_I = 1.0D0 / DSQRT(6.0D0)
+REAL(RK), PARAMETER, PRIVATE :: TWOSQ6_I = 2.0D0 * DSQRT(6.0D0)
 !
 CONTAINS 
     !
@@ -1695,6 +1712,72 @@ CONTAINS
     !
     !===========================================================================
     !
+    SUBROUTINE SOLVE_LIN_SYS_3(MAT, VEC, SOL)
+    !
+    ! Solve a linear system of three equations. Used for triaxial loading.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    !
+    REAL(RK), INTENT(IN) :: MAT(3,3)
+    REAL(RK), INTENT(IN) :: VEC(3)
+    REAL(RK), INTENT(OUT) :: SOL(3)
+    !
+    ! Locals:
+    !
+    REAL(RK) :: INV(3,3)
+    REAL(RK) :: A, B, C, D, E, F, G, H, K
+    REAL(RK) :: DET, MATNORM, INVNORM, COND
+    !
+    !---------------------------------------------------------------------------
+    !
+    A = MAT(1, 1)
+    B = MAT(1, 2)
+    C = MAT(1, 3)
+    D = MAT(2, 1)
+    E = MAT(2, 2)
+    F = MAT(2, 3)
+    G = MAT(3, 1)
+    H = MAT(3, 2)
+    K = MAT(3, 3)
+    !
+    DET = A * (E * K - F * H) - B * (D * K - F * G) + C * (D * H - E * G)
+    !
+    INV(1, 1) = (E * K - F * H) / DET
+    INV(1, 2) = (C * H - B * K) / DET
+    INV(1, 3) = (B * F - C * E) / DET
+    INV(2, 1) = (F * G - D * K) / DET
+    INV(2, 2) = (A * K - C * G) / DET
+    INV(2, 3) = (C * D - A * F) / DET
+    INV(3, 1) = (D * H - E * G) / DET
+    INV(3, 2) = (B * G - A * H) / DET
+    INV(3, 3) = (A * E - B * D) / DET
+    !
+    SOL = MATMUL(INV, VEC)
+    !
+    ! Find conditioning number
+    !
+    MATNORM = MAX(MAT(1, 1) + MAT(1, 2) + MAT(1, 3), &
+         & MAT(2, 1) + MAT(2, 2) + MAT(2, 3), &
+         & MAT(3, 1) + MAT(3, 2) + MAT(3, 3))
+    INVNORM = MAX(INV(1, 1) + INV(1, 2) + INV(1, 3), &
+         & INV(2, 1) + INV(2, 2) + INV(2, 3), &
+         & INV(3, 1) + INV(3, 2) + INV(3, 3))
+    COND = MATNORM * INVNORM
+    !
+    IF (COND .GT. 1.0D3) THEN
+        !
+        CALL PAR_QUIT('Error  :     > Matrix is poorly conditioned.')
+        !
+    ENDIF
+    !
+    RETURN
+    !
+    END SUBROUTINE SOLVE_LIN_SYS_3
+    !
+    !===========================================================================
+    !
     SUBROUTINE SPARSE_MATVEC_EBE(RES, SOL, TEMP1, TEMP2, GSTIF, BCS, NNPE, &
         & NSUB, NSUP, ESUB, ESUP, DTRACE, NP)
     !
@@ -1873,6 +1956,174 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE SKEW_VGR
+    !
+    !===========================================================================
+    !
+    SUBROUTINE TENSOR3DCOMPOSE(MAT, DEV, SKW, SPH)
+    !
+    ! Form  matrix from deviatoric, skew, or spherical parts. If no parts are
+    !   passed, the matix is zeroed.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! MAT: Resulting array of 3x3 matrices
+    ! DEV: Arry of 5-vec representing symmetric, traceless portion
+    ! SKW: Array of 3-vec representing axial vectors of the skew pportion
+    ! SPH: Array of scalars representing one third of the trace
+    !
+    REAL(RK), INTENT(OUT) :: MAT(:, :, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: DEV(:, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: SKW(:, :)
+    REAL(RK), INTENT(IN), OPTIONAL :: SPH(:)
+    !
+    !---------------------------------------------------------------------------
+    !
+    MAT = 0.0D0
+    !
+    IF (PRESENT(DEV)) THEN
+        !
+        MAT(1, 1, :) = -DEV(1, :) * SQ2_I - DEV(2, :) * SQ6_I
+        MAT(2, 2, :) = DEV(1, :) * SQ2_I - DEV(2, :) * SQ6_I
+        MAT(3, 3, :) = DEV(2, :) * TWOSQ6_I
+        !
+        MAT(2, 3, :) = DEV(3, :) * SQ2_I
+        MAT(3, 2, :) = MAT(2, 3, :)
+        !
+        MAT(1, 3, :) = DEV(4, :) * SQ2_I
+        MAT(3, 1, :) = MAT(1, 3, :)
+        !
+        MAT(1, 2, :) = DEV(5, :) * SQ2_I
+        MAT(2, 1, :) = MAT(1, 2, :)
+        !
+    END IF
+    !
+    IF (PRESENT(SKW)) THEN
+        !
+        MAT(2, 3, :) = MAT(2, 3, :) - SKW(1, :)
+        MAT(3, 2, :) = MAT(3, 2, :) + SKW(1, :)
+        !
+        MAT(1, 3, :) = MAT(1, 3, :) + SKW(2, :)
+        MAT(3, 1, :) = MAT(3, 1, :) - SKW(2, :)
+        !
+        MAT(1, 2, :) = MAT(1, 2, :) - SKW(3, :)
+        MAT(2, 1, :) = MAT(2, 1, :) + SKW(3, :)
+        !
+    END IF
+    !
+    IF (PRESENT(SPH)) THEN
+        !
+        MAT(1, 1, :) = MAT(1, 1, :) + SPH
+        MAT(2, 2, :) = MAT(2, 2, :) + SPH
+        MAT(3, 3, :) = MAT(3, 3, :) + SPH
+        !
+    END IF
+    !
+    END SUBROUTINE TENSOR3DCOMPOSE
+    !
+    !===========================================================================
+    !
+    SUBROUTINE TENSOR3DDECOMPOSE(MAT, DEV, SKW, SPH, DECOMP)
+    !
+    ! Decompose matrix into deviatoric, skew, or spherical parts.
+    !
+    ! Note that the three components of the decomposition are orthogonal, but
+    !   the underlying basis is not orthonormal due to scaling.
+    !
+    ! Note: dev(2) = sqrt(3/2)*mat(3,3), when mat is deviatoric.
+    !
+    !---------------------------------------------------------------------------
+    !
+    ! Arguments:
+    ! MAT: Array of 3x3 matrices
+    ! DEV: Array of 5-vec representing symmetric portion (MPSIM convention)
+    ! SKW: Array of 3-vec representing skew portion (MPSIM convention)
+    ! SPH: Array of scalars representing one third of the trace
+    ! DECOMP: Flag indicating decomposition convention
+    !
+    REAL(RK), INTENT(IN) :: MAT(:, :, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: DEV(:, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: SKW(:, :)
+    REAL(RK), INTENT(OUT), OPTIONAL :: SPH(:)
+    INTEGER, INTENT(IN), OPTIONAL :: DECOMP
+    !
+    ! Locals:
+    !
+    INTEGER ::  DECOMP_CONV
+    !
+    !---------------------------------------------------------------------------
+    !
+    DECOMP_CONV = DECOMP_DFLT
+    !
+    IF (PRESENT(DECOMP)) THEN
+        !
+        DECOMP_CONV = DECOMP
+        !
+    END IF
+    !
+    IF (PRESENT(DEV)) THEN
+        !
+        SELECT CASE(DECOMP_CONV)
+        !
+        CASE (DECOMP_MPSIM)
+            !
+            DEV(1, :) = (MAT(2, 2, :) - MAT(1, 1, :)) * SQ2_I
+            DEV(2, :) = (MAT(3, 3, :) + MAT(3, 3, :) - MAT(1, 1, :) - &
+                & MAT(2, 2, :)) * SQ6_I
+            !
+            DEV(3, :) = SQ2_I * (MAT(2, 3, :) + MAT(3, 2, :))
+            DEV(4, :) = SQ2_I * (MAT(1, 3, :) + MAT(3, 1, :))
+            DEV(5, :) = SQ2_I * (MAT(1, 2, :) + MAT(2, 1, :))
+            !
+        CASE (DECOMP_FEMEVPS)
+            !
+            DEV(1,:) = ( MAT(1,1,:) - MAT(2,2,:) )*SQ2_I
+            DEV(2,:) = ( MAT(3,3,:) + MAT(3,3,:) - MAT(1,1,:) - MAT(2,2,:) ) * &
+                & SQ6_I
+            !
+            DEV(3, :) = SQ2_I * (MAT(1, 2, :) + MAT(2, 1, :))
+            DEV(4, :) = SQ2_I * (MAT(1, 3, :) + MAT(3, 1, :))
+            DEV(5, :) = SQ2_I * (MAT(2, 3, :) + MAT(3, 2, :))
+            !
+        CASE DEFAULT
+        !
+        ! Return error status
+        !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRESENT(SKW)) THEN
+        !
+        SELECT CASE(DECOMP_CONV)
+        !
+        CASE (DECOMP_MPSIM)
+            !
+            SKW(1, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
+            SKW(2, :) = 0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
+            !
+        CASE (DECOMP_FEMEVPS)
+            !
+            SKW(1, :) = 0.5D0 * (MAT(2, 1, :) - MAT(1, 2, :))
+            SKW(2, :) = -0.5D0 * (MAT(1, 3, :) - MAT(3, 1, :))
+            SKW(3, :) = 0.5D0 * (MAT(3, 2, :) - MAT(2, 3, :))
+            !
+        CASE DEFAULT
+            !
+            ! Return error status
+            !
+        END SELECT
+        !
+    END IF
+    !
+    IF (PRESENT(SPH)) THEN
+        !
+        SPH = (MAT(1, 1, :) + MAT(2, 2, :) + MAT(3, 3, :)) * (1.0D0 / 3.0D0)
+        !
+    END IF
+    !
+    END SUBROUTINE TENSOR3DDECOMPOSE
     !
     !===========================================================================
     !

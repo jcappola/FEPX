@@ -121,7 +121,6 @@ USE LIBF95, ONLY: EXECCOMMAND, NEWUNITNUMBER
 USE CONVERGENCE_MOD, ONLY: CONVERGENCEKEYWORDINPUT
 USE DIMENSIONS_MOD
 USE SURFACE_MOD
-USE SURFACE_INFO_MOD
 !
 ! From libparallel:
 !
@@ -1331,7 +1330,7 @@ CONTAINS
     ! Read in the number of fasets in the section (and set FASETS).
     READ(IO, *) FASETS
     !
-    ! This needs to be set here, but is in the scope of SURFACE_INFO_MOD
+    ! This needs to be set here, but is in the scope of SURFACE_MOD
     !   currently.
     NSURFACES = FASETS 
     !

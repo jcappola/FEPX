@@ -12,7 +12,6 @@ MODULE DRIVER_UTILITIES_MOD
 !   and macroscopic loads.
 ! EST_AVG_MOD: Estimate bulk elastic moduli. Assumes a uniform texture and 
 !   equal valued element volumes.
-! SOLVE_LIN_SYS_3: Solve a linear system of three equations.
 ! TEMP_UPDATE_STATE_EVPS: Temporarily updates state at center of element only.
 ! UPDATE_STATE_EVPS: Update crystal states for entire mesh.
 ! VELOCITY_ITERATION: Perform iteration on velocity field.
@@ -33,7 +32,7 @@ USE QUADRATURE_MOD
 USE READ_INPUT_MOD
 USE RSTARN_SOLVE_MOD
 USE SHAPE_3D_MOD
-USE SURFACE_INFO_MOD
+USE SURFACE_MOD
 USE UNITS_MOD
 !
 ! From libparallel:
@@ -45,7 +44,7 @@ IMPLICIT NONE
 !
 PRIVATE
 !
-PUBLIC :: CALC_MESH_DIM, CALC_STRESS_STRAIN, EST_AVG_MOD, SOLVE_LIN_SYS_3, &
+PUBLIC :: CALC_MESH_DIM, CALC_STRESS_STRAIN, EST_AVG_MOD, &
     & TEMP_UPDATE_STATE_EVPS, UPDATE_STATE_EVPS, VELOCITY_ITERATION
 !
 CONTAINS
@@ -427,72 +426,6 @@ CONTAINS
     RETURN
     !  
     END SUBROUTINE EST_AVG_MOD
-    !
-    !===========================================================================
-    !
-    SUBROUTINE SOLVE_LIN_SYS_3(MAT, VEC, SOL)
-    !
-    ! Solve a linear system of three equations. Used for triaxial loading.
-    !      
-    !---------------------------------------------------------------------------
-    !      
-    ! Arguments:
-    !
-    REAL(RK), INTENT(IN) :: MAT(3,3)
-    REAL(RK), INTENT(IN) :: VEC(3)
-    REAL(RK), INTENT(OUT) :: SOL(3)
-    !
-    ! Locals:
-    !
-    REAL(RK) :: INV(3,3)
-    REAL(RK) :: A, B, C, D, E, F, G, H, K
-    REAL(RK) :: DET, MATNORM, INVNORM, COND
-    !      
-    !---------------------------------------------------------------------------
-    !      
-    A = MAT(1, 1)
-    B = MAT(1, 2)
-    C = MAT(1, 3)
-    D = MAT(2, 1)
-    E = MAT(2, 2)
-    F = MAT(2, 3)
-    G = MAT(3, 1)
-    H = MAT(3, 2)
-    K = MAT(3, 3)
-    !
-    DET = A * (E * K - F * H) - B * (D * K - F * G) + C * (D * H - E * G)
-    !
-    INV(1, 1) = (E * K - F * H) / DET
-    INV(1, 2) = (C * H - B * K) / DET
-    INV(1, 3) = (B * F - C * E) / DET
-    INV(2, 1) = (F * G - D * K) / DET
-    INV(2, 2) = (A * K - C * G) / DET
-    INV(2, 3) = (C * D - A * F) / DET
-    INV(3, 1) = (D * H - E * G) / DET
-    INV(3, 2) = (B * G - A * H) / DET
-    INV(3, 3) = (A * E - B * D) / DET
-    !
-    SOL = MATMUL(INV, VEC)
-    !
-    ! Find conditioning number
-    !
-    MATNORM = MAX(MAT(1, 1) + MAT(1, 2) + MAT(1, 3), &
-         & MAT(2, 1) + MAT(2, 2) + MAT(2, 3), &
-         & MAT(3, 1) + MAT(3, 2) + MAT(3, 3))
-    INVNORM = MAX(INV(1, 1) + INV(1, 2) + INV(1, 3), &
-         & INV(2, 1) + INV(2, 2) + INV(2, 3), &
-         & INV(3, 1) + INV(3, 2) + INV(3, 3))
-    COND = MATNORM * INVNORM
-    !
-    IF (COND .GT. 1.0D3) THEN
-        !
-        CALL PAR_QUIT('Error  :     > Matrix is poorly conditioned.')
-        !
-    ENDIF
-    !
-    RETURN
-    !
-    END SUBROUTINE SOLVE_LIN_SYS_3
     !
     !===========================================================================
     !

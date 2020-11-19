@@ -8,11 +8,11 @@ MODULE ANISO_EVPS_MOD
 !
 ! Contains subroutines:
 ! ANISO_EVPS: Compute the anisotropic elasto-viscoplastic solution.
-! FIND_WP_HAT: Compute the plastic spin in the intermediate config, `WP_HAT'.
 !
 ! From libfepx:
 !
 USE DIMENSIONS_MOD
+USE KINEMATICS_MOD, ONLY: FIND_WP_HAT
 USE MATERIAL_MATRIX_VP_MOD
 USE MATRIX_OPERATIONS_MOD
 USE MICROSTRUCTURE_MOD
@@ -475,92 +475,5 @@ CONTAINS
     RETURN
     !
     END SUBROUTINE ANISO_EVPS
-    !
-    !===========================================================================
-    !
-    SUBROUTINE FIND_WP_HAT(WP_HAT, E_ELAS, E_BAR, W_VEC_GRN, GDOT, QR5X5, &
-        & DT, N, M)
-    !
-    ! Compute the plastic spin in the intermediate config, `WP_HAT'.
-    !
-    !---------------------------------------------------------------------------
-    !
-    ! Arguments:
-    !
-    REAL(RK), INTENT(OUT) :: WP_HAT(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: E_ELAS(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: E_BAR(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: W_VEC_GRN(0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: GDOT(0:MAXSLIP1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: QR5X5(0:TVEC1, 0:TVEC1, 0:(N - 1), 0:(M - 1))
-    REAL(RK), INTENT(IN) :: DT
-    INTEGER, INTENT(IN) :: N
-    INTEGER, INTENT(IN) :: M
-    !
-    ! Locals:
-    !
-    INTEGER :: I, ISLIP, IPHASE, NUMIND, N_SLIP
-    INTEGER, POINTER :: INDICES(:) => NULL()
-    !
-    REAL(RK), POINTER :: P_HAT_VEC(:,:) => NULL()
-    REAL(RK) :: EE(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK) :: DP_HAT(0:TVEC1, 0:(N - 1), 0:(M - 1))
-    REAL(RK) :: TEMP(0:TVEC1, 0:(N - 1), 0:(M - 1))
-    REAL(RK) :: DP_HAT_TENS(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    REAL(RK) :: X(0:DIMS1, 0:DIMS1, 0:(N - 1), 0:(M - 1))
-    INTEGER  :: MY_PHASE(0:(M-1))
-    !
-    !---------------------------------------------------------------------------
-    !
-    MY_PHASE(:) = PHASE(EL_SUB1:EL_SUP1)
-    !
-    CALL MAT_X_MAT3(E_ELAS, E_BAR, EE, N, M)
-    !
-    WP_HAT(0, :, :) = W_VEC_GRN(0, :, :) + 0.5 / &
-        & DT * (EE(1, 0, :, :) - EE(0, 1, :, :))
-    WP_HAT(1, :, :) = W_VEC_GRN(1, :, :) + 0.5 / &
-        & DT * (EE(2, 0, :, :) - EE(0, 2, :, :))
-    WP_HAT(2, :, :) = W_VEC_GRN(2, :, :) + 0.5 / &
-        & DT * (EE(2, 1, :, :) - EE(1, 2, :, :))
-    !
-    DP_HAT = 0.0D0
-    !
-    DO IPHASE = 1, NUMPHASES
-        !
-        CALL CRYSTALTYPEGET(CTYPE(IPHASE), DEV=P_HAT_VEC)
-        N_SLIP = CTYPE(IPHASE)%NUMSLIP
-        !
-        CALL FIND_INDICES(NUMIND, IPHASE, MY_PHASE, INDICES)
-        !
-        DO ISLIP = 0, (N_SLIP - 1)
-            !
-            DO I = 0, TVEC1
-                !
-                DP_HAT(I, :, INDICES) = DP_HAT(I, :, INDICES) + &
-                    & GDOT(ISLIP, :, INDICES) * &
-                    & P_HAT_VEC(I + 1, ISLIP + 1)
-                !
-            ENDDO
-            !
-        ENDDO
-        !
-        DEALLOCATE(P_HAT_VEC)
-        DEALLOCATE(INDICES)
-        !
-    ENDDO
-    !
-    CALL MAT_X_VEC5(QR5X5, DP_HAT, TEMP, N, M)
-    !
-    CALL VEC_MAT_SYMM_GRN(TEMP, DP_HAT_TENS, N, M)
-    !
-    CALL MAT_X_MAT3(E_ELAS, DP_HAT_TENS, X, N, M)
-    !
-    WP_HAT(0, :, :) = WP_HAT(0, :, :) - X(1, 0, :, :) + X(0, 1, :, :)
-    WP_HAT(1, :, :) = WP_HAT(1, :, :) - X(2, 0, :, :) + X(0, 2, :, :)
-    WP_HAT(2, :, :) = WP_HAT(2, :, :) - X(2, 1, :, :) + X(1, 2, :, :)
-    !
-    RETURN
-    !
-    END SUBROUTINE FIND_WP_HAT
     !
 END MODULE ANISO_EVPS_MOD
