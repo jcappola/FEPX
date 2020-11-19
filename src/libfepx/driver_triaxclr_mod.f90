@@ -8,7 +8,7 @@ MODULE DRIVER_TRIAXCLR_MOD
 !
 ! Contains subroutines:
 ! DRIVER_TRIAX_CLR: Driver for triaxial CLR simulation
-! READ_CTRL_DATA_CLR: Read input data for load control at constant load rate
+! PROCESS_CTRL_DATA_CLR: Read input data for load control at constant load rate
 ! READ_TRIAXCLR_RESTART: Read restart files for triaxial CLR simulations
 ! PRINT_HEADERS: Print headers to output files
 !
@@ -1188,7 +1188,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_CTRL_DATA_CLR
+    SUBROUTINE PROCESS_CTRL_DATA_CLR
     !
     ! Process input data for load control at constant load rate.
     !
@@ -1402,7 +1402,7 @@ CONTAINS
     !
     RETURN
     !
-    END SUBROUTINE READ_CTRL_DATA_CLR
+    END SUBROUTINE PROCESS_CTRL_DATA_CLR
     !
     !===========================================================================
     !

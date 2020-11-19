@@ -8,7 +8,7 @@ MODULE DRIVER_UNIAXIAL_CONTROL_MOD
 !
 ! Contains subroutines:
 ! DRIVER_UNIAXIAL_CONTROL: Primary driver for uniaxial control simulations.
-! READ_CTRL_DATA: Read data for load control and modify initial velocity field.
+! PROCESS_CTRL_DATA: Read data for load control and modify initial velocity field.
 ! READ_UNIAXIAL_RESTART: Read uniaxial control restart information.
 !
 ! Contains functions:
@@ -626,7 +626,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_CTRL_DATA(VELOCITY)
+    SUBROUTINE PROCESS_CTRL_DATA(VELOCITY)
     !
     ! Read data for load control and modify initial velocity field.
     !
@@ -1057,7 +1057,7 @@ CONTAINS
     !
     RETURN
     !
-    END SUBROUTINE READ_CTRL_DATA
+    END SUBROUTINE PROCESS_CTRL_DATA
     !
     !===========================================================================
     !

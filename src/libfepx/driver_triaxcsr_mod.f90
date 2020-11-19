@@ -8,7 +8,7 @@ MODULE DRIVER_TRIAXCSR_MOD
 !
 ! Contains subroutines:
 ! DRIVER_TRIAX_CSR: Primary driver for triaxial CSR control simulations.
-! READ_CTRL_DATA_CSR: Read data for control and modify initial velocity field.
+! PROCESS_CTRL_DATA_CSR: Read data for control and modify initial velocity field.
 ! READ_TRIAXCSR_RESTART: Read triaxial CSR control restart information.
 !
 ! From libf95:
@@ -987,7 +987,7 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_CTRL_DATA_CSR(VELOCITY)
+    SUBROUTINE PROCESS_CTRL_DATA_CSR(VELOCITY)
     !
     ! Read data for triaxial load control at constant strain rate.
     !
@@ -1202,7 +1202,7 @@ CONTAINS
     !
     RETURN
     !
-    END SUBROUTINE READ_CTRL_DATA_CSR
+    END SUBROUTINE PROCESS_CTRL_DATA_CSR
     !
     !===========================================================================
     !

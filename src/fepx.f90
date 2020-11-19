@@ -85,7 +85,7 @@ IF (MYID .EQ. 0) THEN
     CALL DATE_AND_TIME(VALUES = TIMEVALUES)
     WRITE(DFLT_U,'(A)')'==========================    F   E   P   X   =========================='
     WRITE(DFLT_U,'(A)')'Info   : A finite element software package for polycrystal plasticity.'
-    WRITE(DFLT_U,'(A)')'Info   : Version v1.1.1-39-format_modules'
+    WRITE(DFLT_U,'(A)')'Info   : Version v1.1.1-40-format_modules'
     WRITE(DFLT_U,'(A,I0,A)')'Info   : Running on ', NUMPROCS, ' cores.'
     WRITE(DFLT_U,'(A)')'Info   : <https://fepx.info>'
     WRITE(DFLT_U,'(A)')'Info   : Copyright (C) 1996-2020, DPLab, ACME Lab.'
@@ -205,9 +205,9 @@ M_EL = EL_SUP1 - EL_SUB1 + 1
 AUTO_TIME = 0   ! (0)=No, (1):Yes
 DEF_CONTROL_BY = OPTIONS%DEF_CONTROL_BY
 !
-! Extract crystal parameters from configuration file.
+! Process crystal parameters from configuration file.
 !
-CALL READ_MATERIAL_PARAMETERS(KELAS, KEINV)
+CALL PROCESS_MATERIAL_PARAMETERS(KELAS, KEINV)
 !
 IF (MYID .EQ. 0) THEN
     !
@@ -400,21 +400,21 @@ END IF
 DEALLOCATE(PART_INFO)
 DEALLOCATE(GLOBAL_INFO)
 !
-! Read load history.
+! Process load history from read-in options
 !
 SELECT CASE (DEF_CONTROL_BY)
     !
     CASE(UNIAXIAL_LOAD_TARGET, UNIAXIAL_STRAIN_TARGET)
         !
-        CALL READ_CTRL_DATA(VELOCITY)
+        CALL PROCESS_CTRL_DATA(VELOCITY)
         !
     CASE(TRIAXIAL_CONSTANT_STRAIN_RATE)
         !
-        CALL READ_CTRL_DATA_CSR(VELOCITY)
+        CALL PROCESS_CTRL_DATA_CSR(VELOCITY)
         !
     CASE(TRIAXIAL_CONSTANT_LOAD_RATE)
         !
-        CALL READ_CTRL_DATA_CLR
+        CALL PROCESS_CTRL_DATA_CLR
     !
 END SELECT
 !

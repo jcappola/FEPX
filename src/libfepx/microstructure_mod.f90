@@ -18,8 +18,8 @@ MODULE MICROSTRUCTURE_MOD
 ! SET_FCC_BLOCK_MATRICES: Define hardening interaction matrix for FCC crystal
 ! SET_HCP_BLOCK_MATRICES: Define hardening interaction matrix for HCP crystal
 ! SET_BCC_BLOCK_MATRICES: Define hardening interaction matrix for BCC crystal
-! READ_MATERIAL_PARAMETERS:  Routine to read in all crystal parameter data from
-!   configuration file.
+! PROCESS_MATERIAL_PARAMETERS:  Routine to process all crystal parameter info
+!   from data read in from the configuration file.
 !
 ! From libf95:
 !
@@ -48,7 +48,7 @@ PUBLIC :: ASSIGN_ANGLES_PHASES
 PUBLIC :: CRSS_N_INITIALIZE
 !PUBLIC :: READ_GRAIN_ANGLES
 !PUBLIC :: READ_GRAINS_PHASES
-PUBLIC :: READ_MATERIAL_PARAMETERS
+PUBLIC :: PROCESS_MATERIAL_PARAMETERS
 PUBLIC :: SET_TMIN
 PUBLIC :: CRYSTALTYPEGET, CRYSTALTYPECREATE ! From CRYSTAL_TYPE_MOD
 !
@@ -616,9 +616,10 @@ CONTAINS
     !
     !===========================================================================
     !
-    SUBROUTINE READ_MATERIAL_PARAMETERS(KELAS, KEINV)
+    SUBROUTINE PROCESS_MATERIAL_PARAMETERS(KELAS, KEINV)
     !
-    ! Routine to read in all crystal parameter data from configuration file.
+    ! Routine to process all crystal parameter info from data read in from the
+    !   configuration file.
     !
     !---------------------------------------------------------------------------
     !
@@ -1038,6 +1039,6 @@ CONTAINS
     !
     CALL SET_MAXSLIP(NUMSLIP, MAXVERT)
     !
-    END SUBROUTINE READ_MATERIAL_PARAMETERS
+    END SUBROUTINE PROCESS_MATERIAL_PARAMETERS
     !
 END MODULE MICROSTRUCTURE_MOD
