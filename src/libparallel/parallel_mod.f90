@@ -134,7 +134,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_AllREDUCE(PART, WHOLE, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
+    CALL MPI_ALLREDUCE(PART, WHOLE, 1, MPI_DOUBLE_PRECISION, MPI_SUM, &
         & MPI_COMM_WORLD, IERR)
     !
     RETURN
@@ -162,7 +162,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_AllREDUCE(PART, MAXPART, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+    CALL MPI_ALLREDUCE(PART, MAXPART, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
         & MPI_COMM_WORLD, IERR)
     !
     RETURN
@@ -173,7 +173,7 @@ CONTAINS
     !
     SUBROUTINE PAR_MIN(PART, MINPART)
     !
-    !  Find minimum of parts.
+    ! Find minimum of parts.
     !
     !---------------------------------------------------------------------------
     !
@@ -190,7 +190,7 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     !
-    CALL MPI_AllREDUCE(PART, MINPART, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
+    CALL MPI_ALLREDUCE(PART, MINPART, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
         & MPI_COMM_WORLD, IERR)
     !
     RETURN
@@ -236,8 +236,8 @@ CONTAINS
     !---------------------------------------------------------------------------
     !
     ! Arguments:
-    ! MESSAGE:
-    ! ABORT:
+    ! MESSAGE: Message to write
+    ! ABORT: Flag that forces MPI to abort over finalize
     !
     CHARACTER*(*), INTENT(IN) :: MESSAGE
     LOGICAL, INTENT(IN), OPTIONAL :: ABORT
@@ -265,7 +265,6 @@ CONTAINS
     !
     CALL PAR_MESSAGE(6, MESSAGE, ALLWRITE = .FALSE.)
     CALL PAR_MESSAGE(6, FOOTER, ALLWRITE = .FALSE.)
-    !CALL PAR_MESSAGE(6, 'Exiting.', ALLWRITE=.FALSE.)
     !
     IF (USE_ABORT) THEN
         !
